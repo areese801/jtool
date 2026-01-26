@@ -1,0 +1,76 @@
+{
+  "appName": "DataProcessor",
+  "version": "2.3.1",
+  "environment": "production",
+  "debug": false,
+  "database": {
+    "host": "db.example.com",
+    "port": 5432,
+    "name": "app_prod",
+    "maxConnections": 100,
+    "ssl": true,
+    "timeout": 30.0
+  },
+  "cache": {
+    "enabled": true,
+    "provider": "redis",
+    "ttl": 3600,
+    "hosts": [
+      "cache1.example.com",
+      "cache2.example.com"
+    ]
+  },
+  "features": {
+    "darkMode": true,
+    "notifications": true,
+    "analytics": false,
+    "betaFeatures": {
+      "newDashboard": false,
+      "aiAssistant": false
+    }
+  },
+  "users": [
+    {
+      "id": 1,
+      "name": "Alice Johnson",
+      "role": "admin",
+      "email": "alice@example.com",
+      "active": true
+    },
+    {
+      "id": 2,
+      "name": "Bob Smith",
+      "role": "developer",
+      "email": "bob@example.com",
+      "active": true
+    },
+    {
+      "id": 3,
+      "name": "Charlie Brown",
+      "role": "viewer",
+      "email": "charlie@example.com",
+      "active": false
+    }
+  ],
+  "apiKeys": {
+    "stripe": "sk_live_abc123",
+    "sendgrid": "SG.xyz789",
+    "aws": null
+  },
+  "rateLimits": {
+    "requestsPerMinute": 100,
+    "requestsPerHour": 5000,
+    "burstLimit": 20
+  },
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "outputs": ["stdout", "file"],
+    "retention": 30
+  },
+  "metadata": {
+    "createdAt": "2024-01-15T10:30:00Z",
+    "updatedAt": "2024-06-20T14:45:00Z",
+    "owner": "platform-team"
+  }
+}

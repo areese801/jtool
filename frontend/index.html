@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>JSON Diff</title>
+    <link rel="stylesheet" href="./src/style.css"/>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>JSON Tools</h1>
+            <nav class="tab-nav">
+                <button class="tab-btn active" data-tab="diff">Diff</button>
+                <button class="tab-btn" data-tab="paths">Path Explorer</button>
+                <button class="tab-btn" data-tab="logs">Log Analyzer</button>
+            </nav>
+        </header>
+
+        <main>
+            <!-- Tab 1: JSON Diff -->
+            <div id="tab-diff" class="tab-content active">
+                <div class="editor-container">
+                    <div class="editor-panel">
+                        <div class="panel-header">
+                            <span>Left (Original)</span>
+                            <div class="panel-buttons">
+                                <button class="btn-small" id="load-left">Load File</button>
+                                <button class="btn-small" id="format-left">Format</button>
+                            </div>
+                        </div>
+                        <textarea id="left-json" placeholder="Paste JSON here or click 'Load File'..."></textarea>
+                        <div class="error-message" id="left-error"></div>
+                    </div>
+
+                    <div class="editor-panel">
+                        <div class="panel-header">
+                            <span>Right (Modified)</span>
+                            <div class="panel-buttons">
+                                <button class="btn-small" id="load-right">Load File</button>
+                                <button class="btn-small" id="format-right">Format</button>
+                            </div>
+                        </div>
+                        <textarea id="right-json" placeholder="Paste JSON here or click 'Load File'..."></textarea>
+                        <div class="error-message" id="right-error"></div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <div class="options-panel">
+                        <span class="options-label">Normalization:</span>
+                        <label class="checkbox-label" title="Treat {b:1, a:2} as equal to {a:2, b:1}">
+                            <input type="checkbox" id="opt-sort-keys" checked>
+                            Sort Keys
+                        </label>
+                        <label class="checkbox-label" title="Treat 1.0 as equal to 1">
+                            <input type="checkbox" id="opt-normalize-numbers" checked>
+                            Numbers
+                        </label>
+                        <label class="checkbox-label" title="Trim leading/trailing whitespace from strings">
+                            <input type="checkbox" id="opt-trim-strings">
+                            Trim Strings
+                        </label>
+                        <label class="checkbox-label" title="Treat null values as equivalent to missing keys">
+                            <input type="checkbox" id="opt-null-equals-absent">
+                            Null = Absent
+                        </label>
+                    </div>
+                    <button class="btn-primary" id="compare-btn">Compare</button>
+                </div>
+
+                <div class="results-container" id="results-container">
+                    <div class="results-header">
+                        <span>Diff Results</span>
+                        <div class="stats" id="stats"></div>
+                    </div>
+                    <div class="results" id="results">
+                        <p class="placeholder">Click "Compare" to see differences</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Path Explorer -->
+            <div id="tab-paths" class="tab-content">
+                <div class="editor-container single-panel">
+                    <div class="editor-panel">
+                        <div class="panel-header">
+                            <span>JSON Input</span>
+                            <div class="panel-buttons">
+                                <button class="btn-small" id="load-paths-file">Load File</button>
+                                <button class="btn-small" id="format-paths">Format</button>
+                            </div>
+                        </div>
+                        <textarea id="paths-json" placeholder="Paste JSON here or click 'Load File'..."></textarea>
+                        <div class="error-message" id="paths-error"></div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn-primary" id="extract-btn">Extract Paths</button>
+                </div>
+
+                <div class="results-container">
+                    <div class="results-header">
+                        <span>JSON Paths</span>
+                        <div class="stats" id="paths-stats"></div>
+                    </div>
+                    <div class="results paths-results" id="paths-results">
+                        <p class="placeholder">Click "Extract Paths" to see all JSON paths</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Log Analyzer -->
+            <div id="tab-logs" class="tab-content">
+                <div class="controls log-controls">
+                    <p class="description">
+                        Analyze log files with mixed content (logs + JSON).
+                        Extracts all JSON lines and aggregates path statistics.
+                    </p>
+                    <button class="btn-small" id="analyze-file-btn">Load File</button>
+                </div>
+
+                <div class="results-container">
+                    <div class="results-header">
+                        <span>Analysis Results</span>
+                        <div class="stats" id="log-stats"></div>
+                    </div>
+                    <div class="results paths-results" id="log-results">
+                        <p class="placeholder">Click "Select Log File" to analyze JSON paths in a log file</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="./src/main.js" type="module"></script>
+</body>
+</html>
