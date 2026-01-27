@@ -276,7 +276,7 @@ async function handleCompare() {
         displayStats(result.stats);
         displayDiff(result.root);
     } catch (err) {
-        resultsDiv.innerHTML = `<p class="error">${err.message || 'Comparison failed'}</p>`;
+        resultsDiv.innerHTML = `<p class="error">${escapeHtml(err.message || 'Comparison failed')}</p>`;
     }
 }
 
@@ -324,7 +324,7 @@ function renderNode(node, container, depth) {
     div.className = `diff-node diff-${node.type}`;
     div.style.paddingLeft = `${depth * 16}px`;
 
-    let content = `<span class="diff-path">${node.path}</span>`;
+    let content = `<span class="diff-path">${escapeHtml(node.path)}</span>`;
 
     if (node.type === 'added') {
         content += ` <span class="diff-badge badge-added">added</span>`;
@@ -404,7 +404,7 @@ async function handleExtractPaths() {
         displayPathsStats(result);
         displayPaths(result.paths);
     } catch (err) {
-        pathsResultsDiv.innerHTML = `<p class="error">${err.message || 'Path extraction failed'}</p>`;
+        pathsResultsDiv.innerHTML = `<p class="error">${escapeHtml(err.message || 'Path extraction failed')}</p>`;
     }
 }
 
@@ -479,7 +479,7 @@ async function handleAnalyzeLogFile() {
         displayLogStats(result);
         displayLogPaths(result.paths);
     } catch (err) {
-        logResultsDiv.innerHTML = `<p class="error">${err.message || 'Analysis failed'}</p>`;
+        logResultsDiv.innerHTML = `<p class="error">${escapeHtml(err.message || 'Analysis failed')}</p>`;
     }
 }
 
