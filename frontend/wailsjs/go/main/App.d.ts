@@ -7,11 +7,17 @@ import {paths} from '../models';
 
 export function AnalyzeLogFile():Promise<loganalyzer.AnalysisResult>;
 
+export function AnalyzeLogFilePath(arg1:string):Promise<loganalyzer.AnalysisResult>;
+
 export function AnalyzeLogString(arg1:string):Promise<loganalyzer.AnalysisResult>;
 
 export function CompareJSON(arg1:string,arg2:string):Promise<diff.DiffResult>;
 
 export function CompareJSONWithOptions(arg1:string,arg2:string,arg3:main.NormalizeOptions):Promise<diff.DiffResult>;
+
+export function CompareLogAnalyses(arg1:loganalyzer.AnalysisResult,arg2:loganalyzer.AnalysisResult,arg3:string,arg4:string):Promise<loganalyzer.ComparisonResult>;
+
+export function CompareLogFiles(arg1:string,arg2:string):Promise<loganalyzer.ComparisonResult>;
 
 export function FormatJSON(arg1:string):Promise<string>;
 
@@ -20,5 +26,13 @@ export function GetDefaultNormalizeOptions():Promise<main.NormalizeOptions>;
 export function GetJSONPaths(arg1:string):Promise<paths.PathResult>;
 
 export function OpenJSONFile():Promise<string>;
+
+export function OpenJSONFileWithPath():Promise<main.FileResult>;
+
+export function ReadFilePath(arg1:string):Promise<string>;
+
+export function SelectAndAnalyzeLogFile():Promise<main.LogFileResult>;
+
+export function SelectAndCompareLogFiles():Promise<loganalyzer.ComparisonResult>;
 
 export function ValidateJSON(arg1:string):Promise<string>;

@@ -29,7 +29,7 @@ import (
 //	    stats = calculate_stats(root)
 //	    return DiffResult(root=root, stats=stats)
 func Compare(left, right any) *DiffResult {
-	root := compareValues(left, right, "$")
+	root := compareValues(left, right, "")
 	stats := calculateStats(root)
 
 	return &DiffResult{
@@ -62,7 +62,7 @@ func CompareWithOptions(left, right any, opts normalize.Options) *DiffResult {
 	rightNorm := normalize.Value(right, opts)
 
 	// Now compare the normalized values
-	root := compareValues(leftNorm, rightNorm, "$")
+	root := compareValues(leftNorm, rightNorm, "")
 	stats := calculateStats(root)
 
 	return &DiffResult{

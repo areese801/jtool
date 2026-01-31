@@ -40,8 +40,8 @@ func Extract(data any) *PathResult {
 	// Python: paths = defaultdict(int)
 	pathCounts := make(map[string]int)
 
-	// Recursively extract paths
-	extractPaths("$", data, pathCounts)
+	// Recursively extract paths (starting with empty prefix for jq compatibility)
+	extractPaths("", data, pathCounts)
 
 	// Convert map to sorted slice
 	// Go maps have random iteration order, so we must sort explicitly

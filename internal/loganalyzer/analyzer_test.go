@@ -44,24 +44,24 @@ func TestAnalyzeString_MultiLineJSON(t *testing.T) {
 	foundName := false
 	foundAge := false
 	for _, p := range result.Paths {
-		if p.Path == "$.name" {
+		if p.Path == ".name" {
 			foundName = true
 			if p.Count != 2 {
-				t.Errorf("expected $.name count=2, got %d", p.Count)
+				t.Errorf("expected .name count=2, got %d", p.Count)
 			}
 		}
-		if p.Path == "$.age" {
+		if p.Path == ".age" {
 			foundAge = true
 			if p.Count != 2 {
-				t.Errorf("expected $.age count=2, got %d", p.Count)
+				t.Errorf("expected .age count=2, got %d", p.Count)
 			}
 		}
 	}
 	if !foundName {
-		t.Error("$.name path not found")
+		t.Error(".name path not found")
 	}
 	if !foundAge {
-		t.Error("$.age path not found")
+		t.Error(".age path not found")
 	}
 }
 
@@ -90,15 +90,15 @@ DEBUG: Processing complete
 	// Verify both objects were parsed
 	foundType := false
 	for _, p := range result.Paths {
-		if p.Path == "$.type" {
+		if p.Path == ".type" {
 			foundType = true
 			if p.Count != 2 {
-				t.Errorf("expected $.type count=2, got %d", p.Count)
+				t.Errorf("expected .type count=2, got %d", p.Count)
 			}
 		}
 	}
 	if !foundType {
-		t.Error("$.type path not found")
+		t.Error(".type path not found")
 	}
 }
 
@@ -127,12 +127,12 @@ func TestAnalyzeString_NestedMultiLine(t *testing.T) {
 	// Verify nested paths were extracted
 	foundCity := false
 	for _, p := range result.Paths {
-		if p.Path == "$.users[].profile.city" {
+		if p.Path == ".users[].profile.city" {
 			foundCity = true
 		}
 	}
 	if !foundCity {
-		t.Error("$.users[].profile.city path not found")
+		t.Error(".users[].profile.city path not found")
 	}
 }
 

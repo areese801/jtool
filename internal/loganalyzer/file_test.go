@@ -30,14 +30,14 @@ func TestAnalyzeFile_MultiLine(t *testing.T) {
 	pathsFound := make(map[string]bool)
 	for _, p := range result.Paths {
 		pathsFound[p.Path] = true
-		if p.Path == "$.type" {
-			t.Logf("$.type count=%d, top values:", p.Count)
+		if p.Path == ".type" {
+			t.Logf(".type count=%d, top values:", p.Count)
 			for _, v := range p.TopValues {
 				t.Logf("  %s (%d)", v.Value, v.Count)
 			}
 		}
-		if p.Path == "$.record.email" {
-			t.Logf("$.record.email distinct=%d, top values:", p.DistinctCount)
+		if p.Path == ".record.email" {
+			t.Logf(".record.email distinct=%d, top values:", p.DistinctCount)
 			for _, v := range p.TopValues {
 				t.Logf("  %s (%d)", v.Value, v.Count)
 			}
@@ -45,14 +45,14 @@ func TestAnalyzeFile_MultiLine(t *testing.T) {
 	}
 
 	expectedPaths := []string{
-		"$.type",
-		"$.stream",
-		"$.record.id",
-		"$.record.name",
-		"$.record.email",
-		"$.record.items[].sku",
-		"$.record.notes",
-		"$.value.users.position",
+		".type",
+		".stream",
+		".record.id",
+		".record.name",
+		".record.email",
+		".record.items[].sku",
+		".record.notes",
+		".value.users.position",
 	}
 
 	for _, p := range expectedPaths {

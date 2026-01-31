@@ -6,8 +6,13 @@ import {
     FormatJSON,
     ValidateJSON,
     OpenJSONFile,
+    OpenJSONFileWithPath,
+    ReadFilePath,
     GetJSONPaths,
-    AnalyzeLogFile
+    SelectAndAnalyzeLogFile,
+    AnalyzeLogFilePath,
+    CompareLogAnalyses,
+    CompareLogFiles
 } from '../wailsjs/go/main/App';
 
 // ============================================================
@@ -39,6 +44,8 @@ tabBtns.forEach(btn => {
 // ============================================================
 const leftTextarea = document.getElementById('left-json');
 const rightTextarea = document.getElementById('right-json');
+const leftFilePathInput = document.getElementById('left-file-path');
+const rightFilePathInput = document.getElementById('right-file-path');
 const leftError = document.getElementById('left-error');
 const rightError = document.getElementById('right-error');
 const compareBtn = document.getElementById('compare-btn');
@@ -59,6 +66,7 @@ const optNullEqualsAbsent = document.getElementById('opt-null-equals-absent');
 // Path Explorer Tab - DOM Elements
 // ============================================================
 const pathsTextarea = document.getElementById('paths-json');
+const pathsFilePathInput = document.getElementById('paths-file-path');
 const pathsError = document.getElementById('paths-error');
 const extractBtn = document.getElementById('extract-btn');
 const formatPathsBtn = document.getElementById('format-paths');
@@ -74,6 +82,18 @@ formatLeftBtn.addEventListener('click', () => handleFormat('left'));
 formatRightBtn.addEventListener('click', () => handleFormat('right'));
 loadLeftBtn.addEventListener('click', () => handleLoadFile('left'));
 loadRightBtn.addEventListener('click', () => handleLoadFile('right'));
+
+// File path inputs - load on Enter
+leftFilePathInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        handleLoadFromPath('left');
+    }
+});
+rightFilePathInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        handleLoadFromPath('right');
+    }
+});
 
 // Real-time validation as user types (debounced)
 let leftTimeout, rightTimeout;
@@ -93,6 +113,13 @@ extractBtn.addEventListener('click', handleExtractPaths);
 formatPathsBtn.addEventListener('click', () => handleFormatPaths());
 loadPathsFileBtn.addEventListener('click', () => handleLoadPathsFile());
 
+// File path input - load on Enter
+pathsFilePathInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        handleLoadPathsFromPath();
+    }
+});
+
 let pathsTimeout;
 pathsTextarea.addEventListener('input', () => {
     clearTimeout(pathsTimeout);
@@ -103,6 +130,7 @@ pathsTextarea.addEventListener('input', () => {
 // Log Analyzer Tab - DOM Elements
 // ============================================================
 const analyzeFileBtn = document.getElementById('analyze-file-btn');
+const logFilePathInput = document.getElementById('log-file-path');
 const logResultsDiv = document.getElementById('log-results');
 const logStatsDiv = document.getElementById('log-stats');
 
@@ -110,6 +138,11 @@ const logStatsDiv = document.getElementById('log-stats');
 // Log Analyzer Tab - Event Listeners
 // ============================================================
 analyzeFileBtn.addEventListener('click', handleAnalyzeLogFile);
+logFilePathInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        handleAnalyzeFromPath();
+    }
+});
 
 // ============================================================
 // Shared Functions
@@ -202,16 +235,42 @@ async function handleFormatPaths() {
 }
 
 /**
- * Load a JSON file into the specified textarea (diff tab)
+ * Load a JSON file into the specified textarea (diff tab) via file dialog
  */
 async function handleLoadFile(side) {
     const textarea = side === 'left' ? leftTextarea : rightTextarea;
+    const pathInput = side === 'left' ? leftFilePathInput : rightFilePathInput;
     const errorDiv = side === 'left' ? leftError : rightError;
 
     try {
-        const content = await OpenJSONFile();
-        if (!content) return;
+        const result = await OpenJSONFileWithPath();
+        if (!result) return;
 
+        textarea.value = result.content;
+        pathInput.value = result.path;
+        errorDiv.textContent = '';
+        validateInput(side);
+    } catch (err) {
+        errorDiv.textContent = err.message || 'Error loading file';
+    }
+}
+
+/**
+ * Load a JSON file from a pasted path
+ */
+async function handleLoadFromPath(side) {
+    const textarea = side === 'left' ? leftTextarea : rightTextarea;
+    const pathInput = side === 'left' ? leftFilePathInput : rightFilePathInput;
+    const errorDiv = side === 'left' ? leftError : rightError;
+
+    const path = pathInput.value.trim();
+    if (!path) {
+        errorDiv.textContent = 'Please enter a file path';
+        return;
+    }
+
+    try {
+        const content = await ReadFilePath(path);
         textarea.value = content;
         errorDiv.textContent = '';
         validateInput(side);
@@ -221,13 +280,34 @@ async function handleLoadFile(side) {
 }
 
 /**
- * Load a JSON file into paths textarea
+ * Load a JSON file into paths textarea via file dialog
  */
 async function handleLoadPathsFile() {
     try {
-        const content = await OpenJSONFile();
-        if (!content) return;
+        const result = await OpenJSONFileWithPath();
+        if (!result) return;
 
+        pathsTextarea.value = result.content;
+        pathsFilePathInput.value = result.path;
+        pathsError.textContent = '';
+        validatePathsInput();
+    } catch (err) {
+        pathsError.textContent = err.message || 'Error loading file';
+    }
+}
+
+/**
+ * Load a JSON file from a pasted path into paths textarea
+ */
+async function handleLoadPathsFromPath() {
+    const path = pathsFilePathInput.value.trim();
+    if (!path) {
+        pathsError.textContent = 'Please enter a file path';
+        return;
+    }
+
+    try {
+        const content = await ReadFilePath(path);
         pathsTextarea.value = content;
         pathsError.textContent = '';
         validatePathsInput();
@@ -313,7 +393,7 @@ function displayDiff(node) {
  * Render a single diff node and its children
  */
 function renderNode(node, container, depth) {
-    if (node.path === '$' && node.children && node.children.length > 0) {
+    if (node.path === '' && node.children && node.children.length > 0) {
         for (const child of node.children) {
             renderNode(child, container, depth);
         }
@@ -461,20 +541,47 @@ function displayPaths(paths) {
 // ============================================================
 
 /**
- * Analyze a log file for JSON paths
+ * Analyze a log file for JSON paths (via file dialog)
  */
 async function handleAnalyzeLogFile() {
     logResultsDiv.innerHTML = '<p class="placeholder">Analyzing file...</p>';
     logStatsDiv.textContent = '';
 
     try {
-        const result = await AnalyzeLogFile();
+        const response = await SelectAndAnalyzeLogFile();
 
         // User cancelled file dialog
-        if (!result) {
-            logResultsDiv.innerHTML = '<p class="placeholder">Click "Select Log File" to analyze JSON paths in a log file</p>';
+        if (!response) {
+            logResultsDiv.innerHTML = '<p class="placeholder">Click "Load File" to analyze JSON paths in a log file</p>';
             return;
         }
+
+        // Show the selected file path
+        logFilePathInput.value = response.path;
+
+        displayLogStats(response.result);
+        displayLogPaths(response.result.paths);
+    } catch (err) {
+        logResultsDiv.innerHTML = `<p class="error">${escapeHtml(err.message || 'Analysis failed')}</p>`;
+    }
+}
+
+/**
+ * Analyze a log file from a pasted path
+ */
+async function handleAnalyzeFromPath() {
+    const path = logFilePathInput.value.trim();
+
+    if (!path) {
+        logResultsDiv.innerHTML = '<p class="error">Please enter a file path</p>';
+        return;
+    }
+
+    logResultsDiv.innerHTML = '<p class="placeholder">Analyzing file...</p>';
+    logStatsDiv.textContent = '';
+
+    try {
+        const result = await AnalyzeLogFilePath(path);
 
         displayLogStats(result);
         displayLogPaths(result.paths);
@@ -502,6 +609,9 @@ function displayLogPaths(paths) {
         logResultsDiv.innerHTML = '<p class="placeholder">No JSON paths found in file</p>';
         return;
     }
+
+    // Clear any existing content (like "Analyzing file...")
+    logResultsDiv.innerHTML = '';
 
     const table = document.createElement('table');
     table.className = 'path-table';
@@ -534,14 +644,21 @@ function displayLogPaths(paths) {
         // Only show key icon if uniqueness is statistically meaningful
         const keyIcon = (isUnique && isStatisticallyMeaningful) ? '<span class="key-icon" title="All values unique">🔑</span>' : '';
         tr.innerHTML = `
-            <td class="path-cell">${escapeHtml(item.path)}</td>
+            <td class="path-cell clickable-path" title="Click to copy jq command">${escapeHtml(item.path)}</td>
             <td class="${countClass}">${item.count.toLocaleString()}</td>
             <td class="objects-cell">${item.objectHits.toLocaleString()}</td>
             <td class="${distinctClass}" title="${distinctTitle}">${item.distinctCount.toLocaleString()}${keyIcon}</td>
         `;
 
+        // Add click handler for path cell - copy to clipboard
+        const pathCell = tr.querySelector('.clickable-path');
+        pathCell.addEventListener('click', (e) => {
+            e.stopPropagation();
+            copyJqCommand(item.path);
+        });
+
         // Add click handler for distinct count
-        const distinctCell = tr.querySelector('.clickable');
+        const distinctCell = tr.querySelector('.count-cell.clickable');
         distinctCell.addEventListener('click', (e) => {
             e.stopPropagation();
             showTopValues(item, tr);
@@ -595,4 +712,455 @@ function showTopValues(item, row) {
 
     // Insert after current row
     row.after(detailRow);
+}
+
+/**
+ * Copy a jq command to the clipboard.
+ * If a file path is available, copies a full bash command.
+ * Otherwise, just copies the jq path pattern.
+ */
+async function copyJqCommand(path) {
+    const filePath = logFilePathInput.value.trim();
+    let textToCopy;
+
+    if (filePath) {
+        // Full jq command with file path
+        textToCopy = `cat '${filePath}' | grep -E '^\\{' | jq '${path}'`;
+    } else {
+        // Just the jq path
+        textToCopy = path;
+    }
+
+    try {
+        await navigator.clipboard.writeText(textToCopy);
+        showCopyFeedback('Copied!');
+    } catch (err) {
+        console.error('Failed to copy:', err);
+    }
+}
+
+/**
+ * Show brief feedback when something is copied
+ */
+function showCopyFeedback(message) {
+    // Create or reuse feedback element
+    let feedback = document.getElementById('copy-feedback');
+    if (!feedback) {
+        feedback = document.createElement('div');
+        feedback.id = 'copy-feedback';
+        document.body.appendChild(feedback);
+    }
+
+    feedback.textContent = message;
+    feedback.classList.add('visible');
+
+    setTimeout(() => {
+        feedback.classList.remove('visible');
+    }, 1500);
+}
+
+// ============================================================
+// Log Analyzer Compare Mode - DOM Elements
+// ============================================================
+const modeBtns = document.querySelectorAll('.mode-btn');
+const singleMode = document.getElementById('log-single-mode');
+const compareMode = document.getElementById('log-compare-mode');
+const compareLeftLoadBtn = document.getElementById('compare-left-load');
+const compareRightLoadBtn = document.getElementById('compare-right-load');
+const compareLeftPath = document.getElementById('compare-left-path');
+const compareRightPath = document.getElementById('compare-right-path');
+const compareLeftInfo = document.getElementById('compare-left-info');
+const compareRightInfo = document.getElementById('compare-right-info');
+const compareAnalysesBtn = document.getElementById('compare-analyses-btn');
+const comparisonResultsContainer = document.getElementById('comparison-results-container');
+const comparisonStats = document.getElementById('comparison-stats');
+const comparisonTbody = document.getElementById('comparison-tbody');
+const optShowOnlyChanges = document.getElementById('opt-show-only-changes');
+const optShowTopValues = document.getElementById('opt-show-top-values');
+
+// Store analysis results for comparison
+let leftAnalysisResult = null;
+let rightAnalysisResult = null;
+
+// ============================================================
+// Log Analyzer Compare Mode - Event Listeners
+// ============================================================
+
+// Mode toggle
+modeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const mode = btn.dataset.mode;
+
+        // Update button states
+        modeBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Show appropriate mode
+        if (mode === 'single') {
+            singleMode.style.display = 'flex';
+            compareMode.style.display = 'none';
+        } else {
+            singleMode.style.display = 'none';
+            compareMode.style.display = 'flex';
+        }
+    });
+});
+
+// File loading
+compareLeftLoadBtn.addEventListener('click', () => handleCompareLoadFile('left'));
+compareRightLoadBtn.addEventListener('click', () => handleCompareLoadFile('right'));
+
+// File path inputs - load on Enter
+compareLeftPath.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        handleCompareLoadFromPath('left');
+    }
+});
+compareRightPath.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        handleCompareLoadFromPath('right');
+    }
+});
+
+// Compare button
+compareAnalysesBtn.addEventListener('click', handleCompareAnalyses);
+
+// Filter options - re-render when changed
+optShowOnlyChanges.addEventListener('change', renderComparison);
+optShowTopValues.addEventListener('change', renderComparison);
+
+// ============================================================
+// Log Analyzer Compare Mode - Core Functions
+// ============================================================
+
+/**
+ * Load and analyze a file for comparison (left or right)
+ */
+async function handleCompareLoadFile(side) {
+    const pathInput = side === 'left' ? compareLeftPath : compareRightPath;
+    const infoDiv = side === 'left' ? compareLeftInfo : compareRightInfo;
+
+    infoDiv.innerHTML = 'Loading file...';
+
+    try {
+        const response = await SelectAndAnalyzeLogFile();
+
+        // User cancelled
+        if (!response) {
+            infoDiv.innerHTML = '';
+            return;
+        }
+
+        // Store the result
+        if (side === 'left') {
+            leftAnalysisResult = response.result;
+        } else {
+            rightAnalysisResult = response.result;
+        }
+
+        // Update UI
+        pathInput.value = response.path;
+        displayCompareFileInfo(response.result, infoDiv);
+
+        // Enable compare button if both files are loaded
+        if (leftAnalysisResult && rightAnalysisResult) {
+            compareAnalysesBtn.disabled = false;
+        }
+    } catch (err) {
+        infoDiv.innerHTML = `<span style="color: var(--error-color)">Error: ${escapeHtml(err.message)}</span>`;
+    }
+}
+
+/**
+ * Load and analyze a file from a pasted path for comparison
+ */
+async function handleCompareLoadFromPath(side) {
+    const pathInput = side === 'left' ? compareLeftPath : compareRightPath;
+    const infoDiv = side === 'left' ? compareLeftInfo : compareRightInfo;
+
+    const path = pathInput.value.trim();
+    if (!path) {
+        infoDiv.innerHTML = '<span style="color: var(--error-color)">Please enter a file path</span>';
+        return;
+    }
+
+    infoDiv.innerHTML = 'Analyzing file...';
+
+    try {
+        const result = await AnalyzeLogFilePath(path);
+
+        // Store the result
+        if (side === 'left') {
+            leftAnalysisResult = result;
+        } else {
+            rightAnalysisResult = result;
+        }
+
+        // Update UI
+        displayCompareFileInfo(result, infoDiv);
+
+        // Enable compare button if both files are loaded
+        if (leftAnalysisResult && rightAnalysisResult) {
+            compareAnalysesBtn.disabled = false;
+        }
+    } catch (err) {
+        infoDiv.innerHTML = `<span style="color: var(--error-color)">Error: ${escapeHtml(err.message)}</span>`;
+    }
+}
+
+/**
+ * Display file info summary in the compare panel
+ */
+function displayCompareFileInfo(result, infoDiv) {
+    infoDiv.innerHTML = `
+        <span class="success-icon">✓</span>
+        <span class="stat">${result.jsonLines.toLocaleString()} lines</span>
+        <span>|</span>
+        <span class="stat">${result.totalPaths.toLocaleString()} paths</span>
+    `;
+}
+
+// Store current comparison result
+let currentComparison = null;
+
+/**
+ * Compare the two analysis results
+ */
+async function handleCompareAnalyses() {
+    if (!leftAnalysisResult || !rightAnalysisResult) {
+        return;
+    }
+
+    try {
+        // Await the async Wails binding call
+        const comparison = await CompareLogAnalyses(
+            leftAnalysisResult,
+            rightAnalysisResult,
+            compareLeftPath.value,
+            compareRightPath.value
+        );
+
+        currentComparison = comparison;
+
+        // Show results container
+        comparisonResultsContainer.style.display = 'flex';
+
+        // Display stats and table
+        displayComparisonStats(comparison.stats);
+        renderComparison();
+    } catch (err) {
+        comparisonResultsContainer.style.display = 'flex';
+        comparisonTbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--error-color)">Error: ${escapeHtml(err.message || 'Comparison failed')}</td></tr>`;
+    }
+}
+
+/**
+ * Display comparison statistics
+ */
+function displayComparisonStats(stats) {
+    const parts = [];
+    if (stats.addedPaths > 0) parts.push(`<span class="stat-added">${stats.addedPaths} added</span>`);
+    if (stats.removedPaths > 0) parts.push(`<span class="stat-removed">${stats.removedPaths} removed</span>`);
+    if (stats.changedPaths > 0) parts.push(`<span class="stat-changed">${stats.changedPaths} changed</span>`);
+    if (stats.equalPaths > 0) parts.push(`<span class="stat-equal">${stats.equalPaths} equal</span>`);
+
+    comparisonStats.innerHTML = parts.join(' | ');
+}
+
+/**
+ * Render the comparison table based on current filters
+ */
+function renderComparison() {
+    if (!currentComparison) return;
+
+    const showOnlyChanges = optShowOnlyChanges.checked;
+    const showTopValues = optShowTopValues.checked;
+
+    // Filter comparisons
+    let comparisons = currentComparison.comparisons;
+    if (showOnlyChanges) {
+        comparisons = comparisons.filter(c => c.status !== 'equal');
+    }
+
+    // Clear table
+    comparisonTbody.innerHTML = '';
+
+    // Render each comparison
+    for (const comp of comparisons) {
+        const tr = document.createElement('tr');
+
+        // Add row class based on status
+        if (comp.status === 'added') {
+            tr.classList.add('row-added');
+        } else if (comp.status === 'removed') {
+            tr.classList.add('row-removed');
+        } else if (comp.status === 'changed') {
+            tr.classList.add('row-changed');
+        }
+
+        // Path cell
+        const pathCell = document.createElement('td');
+        pathCell.className = 'path-cell';
+        pathCell.textContent = comp.path;
+        pathCell.title = 'Click to copy jq command';
+        pathCell.addEventListener('click', (e) => {
+            e.stopPropagation();
+            copyJqCommandForComparison(comp.path, 'left');
+        });
+        tr.appendChild(pathCell);
+
+        // Left count
+        const leftCount = comp.left ? comp.left.count : null;
+        const leftCountCell = document.createElement('td');
+        leftCountCell.className = leftCount !== null ? 'count-cell' : 'count-cell empty';
+        leftCountCell.textContent = leftCount !== null ? leftCount.toLocaleString() : '—';
+        tr.appendChild(leftCountCell);
+
+        // Right count
+        const rightCount = comp.right ? comp.right.count : null;
+        const rightCountCell = document.createElement('td');
+        rightCountCell.className = rightCount !== null ? 'count-cell' : 'count-cell empty';
+        rightCountCell.textContent = rightCount !== null ? rightCount.toLocaleString() : '—';
+        tr.appendChild(rightCountCell);
+
+        // Delta count
+        const deltaCountCell = document.createElement('td');
+        deltaCountCell.className = 'count-cell';
+        if (comp.countDelta > 0) {
+            deltaCountCell.classList.add('delta-positive');
+            deltaCountCell.textContent = '+' + comp.countDelta.toLocaleString();
+        } else if (comp.countDelta < 0) {
+            deltaCountCell.classList.add('delta-negative');
+            deltaCountCell.textContent = comp.countDelta.toLocaleString();
+        } else {
+            deltaCountCell.classList.add('delta-zero');
+            deltaCountCell.textContent = '0';
+        }
+        tr.appendChild(deltaCountCell);
+
+        // Left objects
+        const leftObjects = comp.left ? comp.left.objectHits : null;
+        const leftObjectsCell = document.createElement('td');
+        leftObjectsCell.className = leftObjects !== null ? 'count-cell' : 'count-cell empty';
+        leftObjectsCell.textContent = leftObjects !== null ? leftObjects.toLocaleString() : '—';
+        tr.appendChild(leftObjectsCell);
+
+        // Right objects
+        const rightObjects = comp.right ? comp.right.objectHits : null;
+        const rightObjectsCell = document.createElement('td');
+        rightObjectsCell.className = rightObjects !== null ? 'count-cell' : 'count-cell empty';
+        rightObjectsCell.textContent = rightObjects !== null ? rightObjects.toLocaleString() : '—';
+        tr.appendChild(rightObjectsCell);
+
+        // Delta objects
+        const deltaObjectsCell = document.createElement('td');
+        deltaObjectsCell.className = 'count-cell';
+        if (comp.objectsDelta > 0) {
+            deltaObjectsCell.classList.add('delta-positive');
+            deltaObjectsCell.textContent = '+' + comp.objectsDelta.toLocaleString();
+        } else if (comp.objectsDelta < 0) {
+            deltaObjectsCell.classList.add('delta-negative');
+            deltaObjectsCell.textContent = comp.objectsDelta.toLocaleString();
+        } else {
+            deltaObjectsCell.classList.add('delta-zero');
+            deltaObjectsCell.textContent = '0';
+        }
+        tr.appendChild(deltaObjectsCell);
+
+        // Status badge
+        const statusCell = document.createElement('td');
+        const badge = document.createElement('span');
+        badge.className = `status-badge status-${comp.status}`;
+        badge.textContent = comp.status.toUpperCase();
+        statusCell.appendChild(badge);
+        tr.appendChild(statusCell);
+
+        comparisonTbody.appendChild(tr);
+
+        // Add top values row if enabled
+        if (showTopValues && (comp.left || comp.right)) {
+            const detailRow = createComparisonDetailRow(comp);
+            comparisonTbody.appendChild(detailRow);
+        }
+    }
+
+    // Show message if no results
+    if (comparisons.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="8" style="text-align: center; color: var(--text-secondary); padding: 24px;">
+            ${showOnlyChanges ? 'No changes found (all paths are equal)' : 'No comparisons to display'}
+        </td>`;
+        comparisonTbody.appendChild(tr);
+    }
+}
+
+/**
+ * Create a detail row showing top values for both sides
+ */
+function createComparisonDetailRow(comp) {
+    const tr = document.createElement('tr');
+    tr.className = 'value-detail-row';
+
+    const td = document.createElement('td');
+    td.colSpan = 8;
+
+    let html = '<div class="value-detail" style="display: flex; gap: 24px;">';
+
+    // Left values
+    if (comp.left && comp.left.topValues && comp.left.topValues.length > 0) {
+        html += '<div style="flex: 1;"><strong>Left (Top Values):</strong><ul>';
+        for (const v of comp.left.topValues.slice(0, 5)) {
+            const displayValue = v.value.length > 50 ? v.value.substring(0, 50) + '...' : v.value;
+            html += `<li><span class="value-text">${escapeHtml(displayValue)}</span> <span class="value-count">(${v.count.toLocaleString()})</span></li>`;
+        }
+        if (comp.left.distinctCount > 5) {
+            html += `<li class="more-values">... and ${(comp.left.distinctCount - 5).toLocaleString()} more</li>`;
+        }
+        html += '</ul></div>';
+    } else {
+        html += '<div style="flex: 1;"><strong>Left:</strong> <em style="color: var(--text-secondary);">No values</em></div>';
+    }
+
+    // Right values
+    if (comp.right && comp.right.topValues && comp.right.topValues.length > 0) {
+        html += '<div style="flex: 1;"><strong>Right (Top Values):</strong><ul>';
+        for (const v of comp.right.topValues.slice(0, 5)) {
+            const displayValue = v.value.length > 50 ? v.value.substring(0, 50) + '...' : v.value;
+            html += `<li><span class="value-text">${escapeHtml(displayValue)}</span> <span class="value-count">(${v.count.toLocaleString()})</span></li>`;
+        }
+        if (comp.right.distinctCount > 5) {
+            html += `<li class="more-values">... and ${(comp.right.distinctCount - 5).toLocaleString()} more</li>`;
+        }
+        html += '</ul></div>';
+    } else {
+        html += '<div style="flex: 1;"><strong>Right:</strong> <em style="color: var(--text-secondary);">No values</em></div>';
+    }
+
+    html += '</div>';
+
+    td.innerHTML = html;
+    tr.appendChild(td);
+
+    return tr;
+}
+
+/**
+ * Copy a jq command for comparison mode (uses left file by default)
+ */
+async function copyJqCommandForComparison(path, side) {
+    const filePath = side === 'left' ? compareLeftPath.value : compareRightPath.value;
+    let textToCopy;
+
+    if (filePath) {
+        textToCopy = `cat '${filePath}' | grep -E '^\\{' | jq '${path}'`;
+    } else {
+        textToCopy = path;
+    }
+
+    try {
+        await navigator.clipboard.writeText(textToCopy);
+        showCopyFeedback('Copied!');
+    } catch (err) {
+        console.error('Failed to copy:', err);
+    }
 }

@@ -9,7 +9,7 @@
 <body>
     <div id="app">
         <header>
-            <h1>JSON Tools</h1>
+            <h1>jtool</h1>
             <nav class="tab-nav">
                 <button class="tab-btn active" data-tab="diff">Diff</button>
                 <button class="tab-btn" data-tab="paths">Path Explorer</button>
@@ -24,6 +24,7 @@
                     <div class="editor-panel">
                         <div class="panel-header">
                             <span>Left (Original)</span>
+                            <input type="text" id="left-file-path" class="file-path-input" placeholder="Paste file path...">
                             <div class="panel-buttons">
                                 <button class="btn-small" id="load-left">Load File</button>
                                 <button class="btn-small" id="format-left">Format</button>
@@ -36,6 +37,7 @@
                     <div class="editor-panel">
                         <div class="panel-header">
                             <span>Right (Modified)</span>
+                            <input type="text" id="right-file-path" class="file-path-input" placeholder="Paste file path...">
                             <div class="panel-buttons">
                                 <button class="btn-small" id="load-right">Load File</button>
                                 <button class="btn-small" id="format-right">Format</button>
@@ -86,6 +88,7 @@
                     <div class="editor-panel">
                         <div class="panel-header">
                             <span>JSON Input</span>
+                            <input type="text" id="paths-file-path" class="file-path-input" placeholder="Paste file path...">
                             <div class="panel-buttons">
                                 <button class="btn-small" id="load-paths-file">Load File</button>
                                 <button class="btn-small" id="format-paths">Format</button>
@@ -113,21 +116,106 @@
 
             <!-- Tab 3: Log Analyzer -->
             <div id="tab-logs" class="tab-content">
-                <div class="controls log-controls">
-                    <p class="description">
-                        Analyze log files with mixed content (logs + JSON).
-                        Extracts all JSON lines and aggregates path statistics.
-                    </p>
-                    <button class="btn-small" id="analyze-file-btn">Load File</button>
+                <!-- Mode Toggle -->
+                <div class="log-mode-toggle">
+                    <button class="mode-btn active" data-mode="single">Single Analysis</button>
+                    <button class="mode-btn" data-mode="compare">Compare Files</button>
                 </div>
 
-                <div class="results-container">
-                    <div class="results-header">
-                        <span>Analysis Results</span>
-                        <div class="stats" id="log-stats"></div>
+                <!-- Single Analysis Mode -->
+                <div id="log-single-mode" class="analysis-mode">
+                    <div class="controls log-controls">
+                        <p class="description">
+                            Analyze log files with mixed content (logs + JSON).
+                            Extracts all JSON lines and aggregates path statistics.
+                        </p>
+                        <div class="file-input-row">
+                            <button class="btn-small" id="analyze-file-btn">Load File</button>
+                            <input type="text" id="log-file-path" class="file-path-input" placeholder="Or paste file path and press Enter...">
+                        </div>
                     </div>
-                    <div class="results paths-results" id="log-results">
-                        <p class="placeholder">Click "Select Log File" to analyze JSON paths in a log file</p>
+
+                    <div class="results-container">
+                        <div class="results-header">
+                            <span>Analysis Results</span>
+                            <div class="stats" id="log-stats"></div>
+                        </div>
+                        <div class="results paths-results" id="log-results">
+                            <p class="placeholder">Click "Load File" to analyze JSON paths in a log file</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Compare Mode -->
+                <div id="log-compare-mode" class="analysis-mode" style="display: none;">
+                    <div class="compare-description">
+                        <p>Compare two log files to see which JSON paths were added/removed and how statistics changed (e.g., main branch vs WIP branch).</p>
+                    </div>
+
+                    <!-- Dual File Inputs -->
+                    <div class="compare-inputs">
+                        <div class="compare-panel">
+                            <div class="panel-header">
+                                <span>Left (Baseline)</span>
+                            </div>
+                            <div class="file-input-row">
+                                <button class="btn-small" id="compare-left-load">Load File</button>
+                                <input type="text" id="compare-left-path" class="file-path-input" placeholder="Or paste file path and press Enter...">
+                            </div>
+                            <div class="file-info" id="compare-left-info"></div>
+                        </div>
+
+                        <div class="compare-panel">
+                            <div class="panel-header">
+                                <span>Right (Comparison)</span>
+                            </div>
+                            <div class="file-input-row">
+                                <button class="btn-small" id="compare-right-load">Load File</button>
+                                <input type="text" id="compare-right-path" class="file-path-input" placeholder="Or paste file path and press Enter...">
+                            </div>
+                            <div class="file-info" id="compare-right-info"></div>
+                        </div>
+                    </div>
+
+                    <!-- Compare Options and Button -->
+                    <div class="controls">
+                        <div class="compare-options">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="opt-show-only-changes">
+                                Show only changes
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="opt-show-top-values">
+                                Show top values
+                            </label>
+                        </div>
+                        <button class="btn-primary" id="compare-analyses-btn" disabled>Compare Analysis Results</button>
+                    </div>
+
+                    <!-- Comparison Results -->
+                    <div class="results-container" id="comparison-results-container" style="display: none;">
+                        <div class="results-header">
+                            <span>Comparison Results</span>
+                            <div class="stats" id="comparison-stats"></div>
+                        </div>
+                        <div class="results">
+                            <table class="compare-table" id="comparison-table">
+                                <thead>
+                                    <tr>
+                                        <th>Path</th>
+                                        <th>Left Count</th>
+                                        <th>Right Count</th>
+                                        <th>Δ Count</th>
+                                        <th>Left Objects</th>
+                                        <th>Right Objects</th>
+                                        <th>Δ Objects</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="comparison-tbody">
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>

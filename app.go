@@ -333,3 +333,248 @@ func (a *App) AnalyzeLogFile() (*loganalyzer.AnalysisResult, error) {
 func (a *App) AnalyzeLogString(content string) (*loganalyzer.AnalysisResult, error) {
 	return loganalyzer.AnalyzeString(content)
 }
+
+// AnalyzeLogFilePath analyzes a log file at the given path.
+// Unlike AnalyzeLogFile, this doesn't open a file dialog - it uses the provided path directly.
+// Returns the path along with the analysis result so the frontend can display it.
+func (a *App) AnalyzeLogFilePath(path string) (*loganalyzer.AnalysisResult, error) {
+	if path == "" {
+		return nil, fmt.Errorf("no file path provided")
+	}
+
+	// Check if file exists
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return nil, fmt.Errorf("file not found: %s", path)
+	}
+
+	// Analyze the file
+	result, err := loganalyzer.AnalyzeFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("error analyzing file: %w", err)
+	}
+
+	return result, nil
+}
+
+// SelectAndAnalyzeLogFile opens a file dialog and returns both the path and analysis result.
+// This replaces AnalyzeLogFile when the frontend needs to know the selected path.
+func (a *App) SelectAndAnalyzeLogFile() (*LogFileResult, error) {
+	// Open file dialog
+	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Select Log File",
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "Text/Log Files (*.txt, *.log, *.jsonl)",
+				Pattern:     "*.txt;*.log;*.jsonl",
+			},
+			{
+				DisplayName: "All Files (*.*)",
+				Pattern:     "*.*",
+			},
+		},
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("error opening file dialog: %w", err)
+	}
+
+	// User cancelled
+	if path == "" {
+		return nil, nil
+	}
+
+	// Analyze the file
+	result, err := loganalyzer.AnalyzeFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("error analyzing file: %w", err)
+	}
+
+	return &LogFileResult{
+		Path:   path,
+		Result: result,
+	}, nil
+}
+
+// LogFileResult combines the file path with analysis results.
+type LogFileResult struct {
+	Path   string                      `json:"path"`
+	Result *loganalyzer.AnalysisResult `json:"result"`
+}
+
+// OpenJSONFileWithPath opens a file dialog and returns both path and contents.
+func (a *App) OpenJSONFileWithPath() (*FileResult, error) {
+	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Select JSON File",
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "JSON Files (*.json)",
+				Pattern:     "*.json",
+			},
+			{
+				DisplayName: "All Files (*.*)",
+				Pattern:     "*.*",
+			},
+		},
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("error opening file dialog: %w", err)
+	}
+
+	if path == "" {
+		return nil, nil
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("error reading file: %w", err)
+	}
+
+	return &FileResult{
+		Path:    path,
+		Content: string(data),
+	}, nil
+}
+
+// ReadFilePath reads a file from a given path.
+func (a *App) ReadFilePath(path string) (string, error) {
+	if path == "" {
+		return "", fmt.Errorf("no file path provided")
+	}
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return "", fmt.Errorf("file not found: %s", path)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("error reading file: %w", err)
+	}
+
+	return string(data), nil
+}
+
+// FileResult combines a file path with its contents.
+type FileResult struct {
+	Path    string `json:"path"`
+	Content string `json:"content"`
+}
+
+// CompareLogAnalyses compares two log analysis results and returns a structured comparison.
+// This is the core comparison method used by other comparison functions.
+//
+// Python comparison:
+//
+//	def compare_log_analyses(left: AnalysisResult, right: AnalysisResult,
+//	                         left_file: str, right_file: str) -> ComparisonResult:
+//	    return loganalyzer.compare(left, right, left_file, right_file)
+//
+// Key Go differences:
+//   - Pointers (*AnalysisResult) allow nil checking and avoid copying large structs
+//   - Returns nil instead of raising exceptions for invalid inputs
+func (a *App) CompareLogAnalyses(left, right *loganalyzer.AnalysisResult, leftFile, rightFile string) *loganalyzer.ComparisonResult {
+	return loganalyzer.CompareAnalyses(left, right, leftFile, rightFile)
+}
+
+// CompareLogFiles analyzes and compares two log files at the given paths.
+// This is a convenience method that combines file analysis and comparison.
+//
+// Python comparison:
+//
+//	def compare_log_files(left_path: str, right_path: str) -> ComparisonResult:
+//	    left_result = analyze_file(left_path)
+//	    right_result = analyze_file(right_path)
+//	    return compare(left_result, right_result, left_path, right_path)
+func (a *App) CompareLogFiles(leftPath, rightPath string) (*loganalyzer.ComparisonResult, error) {
+	// Validate inputs
+	if leftPath == "" || rightPath == "" {
+		return nil, fmt.Errorf("both file paths are required")
+	}
+
+	// Analyze left file
+	leftResult, err := loganalyzer.AnalyzeFile(leftPath)
+	if err != nil {
+		return nil, fmt.Errorf("error analyzing left file: %w", err)
+	}
+
+	// Analyze right file
+	rightResult, err := loganalyzer.AnalyzeFile(rightPath)
+	if err != nil {
+		return nil, fmt.Errorf("error analyzing right file: %w", err)
+	}
+
+	// Compare the results
+	comparison := loganalyzer.CompareAnalyses(leftResult, rightResult, leftPath, rightPath)
+	return comparison, nil
+}
+
+// SelectAndCompareLogFiles opens two file dialogs (left/baseline and right/comparison)
+// and returns the comparison result. This is the main entry point for the compare mode UI.
+//
+// Python comparison:
+//
+//	def select_and_compare_log_files():
+//	    left_path = filedialog.askopenfilename(title="Select Baseline File")
+//	    if not left_path:
+//	        return None
+//	    right_path = filedialog.askopenfilename(title="Select Comparison File")
+//	    if not right_path:
+//	        return None
+//	    return compare_log_files(left_path, right_path)
+//
+// Key Go differences:
+//   - Uses Wails runtime.OpenFileDialog for sandbox-compatible file access
+//   - Returns nil (not an error) if user cancels dialog
+//   - Error handling is explicit at each step
+func (a *App) SelectAndCompareLogFiles() (*loganalyzer.ComparisonResult, error) {
+	// Open first dialog for left/baseline file
+	leftPath, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Select Baseline Log File (Left)",
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "Text/Log Files (*.txt, *.log, *.jsonl)",
+				Pattern:     "*.txt;*.log;*.jsonl",
+			},
+			{
+				DisplayName: "All Files (*.*)",
+				Pattern:     "*.*",
+			},
+		},
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("error opening left file dialog: %w", err)
+	}
+
+	// User cancelled first dialog
+	if leftPath == "" {
+		return nil, nil
+	}
+
+	// Open second dialog for right/comparison file
+	rightPath, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Select Comparison Log File (Right)",
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "Text/Log Files (*.txt, *.log, *.jsonl)",
+				Pattern:     "*.txt;*.log;*.jsonl",
+			},
+			{
+				DisplayName: "All Files (*.*)",
+				Pattern:     "*.*",
+			},
+		},
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("error opening right file dialog: %w", err)
+	}
+
+	// User cancelled second dialog
+	if rightPath == "" {
+		return nil, nil
+	}
+
+	// Analyze and compare the files
+	return a.CompareLogFiles(leftPath, rightPath)
+}

@@ -6,6 +6,10 @@ export function AnalyzeLogFile() {
   return window['go']['main']['App']['AnalyzeLogFile']();
 }
 
+export function AnalyzeLogFilePath(arg1) {
+  return window['go']['main']['App']['AnalyzeLogFilePath'](arg1);
+}
+
 export function AnalyzeLogString(arg1) {
   return window['go']['main']['App']['AnalyzeLogString'](arg1);
 }
@@ -16,6 +20,14 @@ export function CompareJSON(arg1, arg2) {
 
 export function CompareJSONWithOptions(arg1, arg2, arg3) {
   return window['go']['main']['App']['CompareJSONWithOptions'](arg1, arg2, arg3);
+}
+
+export function CompareLogAnalyses(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['CompareLogAnalyses'](arg1, arg2, arg3, arg4);
+}
+
+export function CompareLogFiles(arg1, arg2) {
+  return window['go']['main']['App']['CompareLogFiles'](arg1, arg2);
 }
 
 export function FormatJSON(arg1) {
@@ -32,6 +44,22 @@ export function GetJSONPaths(arg1) {
 
 export function OpenJSONFile() {
   return window['go']['main']['App']['OpenJSONFile']();
+}
+
+export function OpenJSONFileWithPath() {
+  return window['go']['main']['App']['OpenJSONFileWithPath']();
+}
+
+export function ReadFilePath(arg1) {
+  return window['go']['main']['App']['ReadFilePath'](arg1);
+}
+
+export function SelectAndAnalyzeLogFile() {
+  return window['go']['main']['App']['SelectAndAnalyzeLogFile']();
+}
+
+export function SelectAndCompareLogFiles() {
+  return window['go']['main']['App']['SelectAndCompareLogFiles']();
 }
 
 export function ValidateJSON(arg1) {

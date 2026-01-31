@@ -101,7 +101,7 @@ func AnalyzeFile(filePath string) (*AnalysisResult, error) {
 	processJSON := func(data any) {
 		jsonLines++
 		linePathValues := make(map[string][]string)
-		extractPathsWithValues("$", data, linePathValues)
+		extractPathsWithValues("", data, linePathValues)
 
 		for path, values := range linePathValues {
 			pathCounts[path] += len(values)
@@ -217,7 +217,7 @@ func AnalyzeString(content string) (*AnalysisResult, error) {
 	processJSON := func(data any) {
 		jsonLines++
 		linePathValues := make(map[string][]string)
-		extractPathsWithValues("$", data, linePathValues)
+		extractPathsWithValues("", data, linePathValues)
 
 		for path, values := range linePathValues {
 			pathCounts[path] += len(values)

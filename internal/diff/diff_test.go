@@ -241,7 +241,7 @@ func TestComparePaths(t *testing.T) {
 	}
 	findChanged(result.Root)
 
-	expectedPath := "$.users[1].name"
+	expectedPath := ".users[1].name"
 	if changedPath != expectedPath {
 		t.Errorf("expected changed path %q, got %q", expectedPath, changedPath)
 	}

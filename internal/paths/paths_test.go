@@ -18,7 +18,7 @@ func TestExtract(t *testing.T) {
 			input:         map[string]any{"name": "Alice", "age": 30},
 			expectedPaths: 2,
 			expectedLeafs: 2,
-			checkPath:     "$.name",
+			checkPath:     ".name",
 			checkPathCount: 1,
 		},
 		{
@@ -26,7 +26,7 @@ func TestExtract(t *testing.T) {
 			input:         map[string]any{"user": map[string]any{"name": "Bob"}},
 			expectedPaths: 1,
 			expectedLeafs: 1,
-			checkPath:     "$.user.name",
+			checkPath:     ".user.name",
 			checkPathCount: 1,
 		},
 		{
@@ -37,9 +37,9 @@ func TestExtract(t *testing.T) {
 					map[string]any{"name": "Bob"},
 				},
 			},
-			expectedPaths:  1, // $.users[].name appears once (unique path)
+			expectedPaths:  1, // .users[].name appears once (unique path)
 			expectedLeafs:  2, // but with count=2
-			checkPath:      "$.users[].name",
+			checkPath:      ".users[].name",
 			checkPathCount: 2,
 		},
 		{
@@ -62,9 +62,9 @@ func TestExtract(t *testing.T) {
 		{
 			name:           "simple array",
 			input:          []any{1, 2, 3},
-			expectedPaths:  1,  // $[]
+			expectedPaths:  1,  // []
 			expectedLeafs:  3,  // count=3
-			checkPath:      "$[]",
+			checkPath:      "[]",
 			checkPathCount: 3,
 		},
 		{
@@ -80,7 +80,7 @@ func TestExtract(t *testing.T) {
 			},
 			expectedPaths:  1,
 			expectedLeafs:  1,
-			checkPath:      "$.a.b.c.d",
+			checkPath:      ".a.b.c.d",
 			checkPathCount: 1,
 		},
 	}
@@ -131,7 +131,7 @@ func TestExtractSorted(t *testing.T) {
 		t.Fatalf("expected 3 paths, got %d", len(result.Paths))
 	}
 
-	expected := []string{"$.apple", "$.mango", "$.zebra"}
+	expected := []string{".apple", ".mango", ".zebra"}
 	for i, p := range result.Paths {
 		if p.Path != expected[i] {
 			t.Errorf("path[%d] = %q, want %q", i, p.Path, expected[i])
