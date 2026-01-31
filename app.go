@@ -5,13 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
-	"jsondiff/internal/diff"
-	"jsondiff/internal/loganalyzer"
-	"jsondiff/internal/normalize"
-	"jsondiff/internal/paths"
+	"jtool/internal/diff"
+	"jtool/internal/loganalyzer"
+	"jtool/internal/normalize"
+	"jtool/internal/paths"
+	"jtool/internal/storage"
 )
 
 // App struct holds the application state.
@@ -21,7 +23,9 @@ import (
 //   - ctx is like storing request context in Flask/Django
 //   - Go structs only hold data; methods are defined separately
 type App struct {
-	ctx context.Context
+	ctx       context.Context
+	history   *storage.FileHistory
+	configDir string
 }
 
 // NewApp creates a new App application struct.
@@ -42,8 +46,44 @@ func NewApp() *App {
 // so we can call the runtime methods.
 //
 // This is a Wails lifecycle hook - called automatically when app starts.
+//
+// Python comparison:
+//
+//	def startup(self):
+//	    self.ctx = ctx
+//	    config_dir = os.path.join(os.path.expanduser("~"), ".jtool")
+//	    self.history = load_history(config_dir)
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+
+	// Get user config directory
+	// Python: os.path.join(os.path.expanduser("~"), ".jtool")
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		// Fallback to current directory if we can't get home dir
+		homeDir = "."
+	}
+	a.configDir = filepath.Join(homeDir, ".jtool")
+
+	// Load file path history from disk
+	// Python: history = load_history(config_dir)
+	history, err := storage.Load(a.configDir)
+	if err != nil {
+		// If we can't load history, start with an empty one
+		// This is not a fatal error - the app can still function
+		history = storage.NewFileHistory()
+	}
+	a.history = history
+}
+
+// shutdown is called when the app is closing.
+// Save the file history to disk.
+func (a *App) shutdown(ctx context.Context) {
+	// Save history to disk
+	// Python: history.save(config_dir)
+	if a.history != nil {
+		_ = a.history.Save(a.configDir)
+	}
 }
 
 // CompareJSON takes two JSON strings, parses them, and returns the diff result.
@@ -270,8 +310,24 @@ func (a *App) GetJSONPaths(jsonStr string) (*paths.PathResult, error) {
 		return nil, fmt.Errorf("invalid JSON: %w", err)
 	}
 
-	// Extract all paths
+	// Extract all paths (leaf values only)
 	result := paths.Extract(data)
+	return result, nil
+}
+
+// GetJSONPathsWithContainers extracts all JSON paths including container paths (objects/arrays).
+// This is useful for seeing the full structure including intermediate objects.
+func (a *App) GetJSONPathsWithContainers(jsonStr string, includeContainers bool) (*paths.PathResult, error) {
+	// Parse JSON
+	var data any
+	if err := json.Unmarshal([]byte(jsonStr), &data); err != nil {
+		return nil, fmt.Errorf("invalid JSON: %w", err)
+	}
+
+	// Extract paths with options
+	result := paths.ExtractWithOptions(data, paths.ExtractOptions{
+		IncludeContainers: includeContainers,
+	})
 	return result, nil
 }
 
@@ -577,4 +633,87 @@ func (a *App) SelectAndCompareLogFiles() (*loganalyzer.ComparisonResult, error) 
 
 	// Analyze and compare the files
 	return a.CompareLogFiles(leftPath, rightPath)
+}
+
+// ============================================================
+// File Path History Methods
+// ============================================================
+
+// GetFileHistory returns the file path history for a specific key.
+// Keys are: "diff-left", "diff-right", "paths", "logs", "compare-left", "compare-right"
+//
+// Python comparison:
+//
+//	def get_file_history(self, key: str) -> list[str]:
+//	    return self.history.get(key, [])
+func (a *App) GetFileHistory(key string) []string {
+	if a.history == nil {
+		return []string{}
+	}
+	return a.history.Get(key)
+}
+
+// GetMostRecentFilePath returns the most recent file path for a specific key.
+// Returns empty string if no history exists.
+//
+// Python comparison:
+//
+//	def get_most_recent_file_path(self, key: str) -> str:
+//	    paths = self.history.get(key, [])
+//	    return paths[0] if paths else ""
+func (a *App) GetMostRecentFilePath(key string) string {
+	if a.history == nil {
+		return ""
+	}
+	return a.history.GetMostRecent(key)
+}
+
+// SaveFilePathToHistory adds a file path to the history for a specific key.
+// This is called automatically when files are loaded, but can also be called manually.
+//
+// Python comparison:
+//
+//	def save_file_path_to_history(self, key: str, path: str):
+//	    self.history.add(key, path)
+//	    self.history.save(self.config_dir)
+func (a *App) SaveFilePathToHistory(key, path string) error {
+	if a.history == nil {
+		return fmt.Errorf("history not initialized")
+	}
+
+	a.history.Add(key, path)
+
+	// Save to disk immediately
+	// Python: self.history.save(self.config_dir)
+	return a.history.Save(a.configDir)
+}
+
+// GetAllFileHistory returns the entire file history map.
+// This is useful for initializing all dropdowns on app startup.
+//
+// Python comparison:
+//
+//	def get_all_file_history(self) -> dict[str, list[str]]:
+//	    return self.history.paths
+func (a *App) GetAllFileHistory() map[string][]string {
+	if a.history == nil {
+		return map[string][]string{}
+	}
+
+	// Build a copy of all history
+	result := make(map[string][]string)
+	keys := []string{
+		"diff-left",
+		"diff-right",
+		"paths",
+		"logs",
+		"compare-left",
+		"compare-right",
+	}
+
+	for _, key := range keys {
+		result[key] = a.history.Get(key)
+	}
+
+	return result
 }

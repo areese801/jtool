@@ -14,7 +14,7 @@ import (
 	"reflect"
 	"sort"
 
-	"jsondiff/internal/normalize"
+	"jtool/internal/normalize"
 )
 
 // Compare performs a diff between two parsed JSON values.

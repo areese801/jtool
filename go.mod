@@ -1,4 +1,4 @@
-module jsondiff
+module jtool
 
 go 1.23
 

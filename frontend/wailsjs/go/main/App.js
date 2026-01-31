@@ -34,12 +34,28 @@ export function FormatJSON(arg1) {
   return window['go']['main']['App']['FormatJSON'](arg1);
 }
 
+export function GetAllFileHistory() {
+  return window['go']['main']['App']['GetAllFileHistory']();
+}
+
 export function GetDefaultNormalizeOptions() {
   return window['go']['main']['App']['GetDefaultNormalizeOptions']();
 }
 
+export function GetFileHistory(arg1) {
+  return window['go']['main']['App']['GetFileHistory'](arg1);
+}
+
 export function GetJSONPaths(arg1) {
   return window['go']['main']['App']['GetJSONPaths'](arg1);
+}
+
+export function GetJSONPathsWithContainers(arg1, arg2) {
+  return window['go']['main']['App']['GetJSONPathsWithContainers'](arg1, arg2);
+}
+
+export function GetMostRecentFilePath(arg1) {
+  return window['go']['main']['App']['GetMostRecentFilePath'](arg1);
 }
 
 export function OpenJSONFile() {
@@ -52,6 +68,10 @@ export function OpenJSONFileWithPath() {
 
 export function ReadFilePath(arg1) {
   return window['go']['main']['App']['ReadFilePath'](arg1);
+}
+
+export function SaveFilePathToHistory(arg1, arg2) {
+  return window['go']['main']['App']['SaveFilePathToHistory'](arg1, arg2);
 }
 
 export function SelectAndAnalyzeLogFile() {

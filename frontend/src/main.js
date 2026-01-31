@@ -9,10 +9,13 @@ import {
     OpenJSONFileWithPath,
     ReadFilePath,
     GetJSONPaths,
+    GetJSONPathsWithContainers,
     SelectAndAnalyzeLogFile,
     AnalyzeLogFilePath,
     CompareLogAnalyses,
-    CompareLogFiles
+    CompareLogFiles,
+    GetAllFileHistory,
+    SaveFilePathToHistory
 } from '../wailsjs/go/main/App';
 
 // ============================================================
@@ -40,6 +43,94 @@ tabBtns.forEach(btn => {
 });
 
 // ============================================================
+// File Path History Management
+// ============================================================
+
+// Map of history keys to datalist IDs
+const historyConfig = {
+    'diff-left': 'left-file-history',
+    'diff-right': 'right-file-history',
+    'paths': 'paths-file-history',
+    'logs': 'logs-file-history',
+    'compare-left': 'compare-left-history',
+    'compare-right': 'compare-right-history'
+};
+
+/**
+ * Update a datalist with history items
+ */
+function updateDatalist(datalistId, paths) {
+    const datalist = document.getElementById(datalistId);
+    if (!datalist) return;
+
+    // Clear existing options
+    datalist.innerHTML = '';
+
+    // Add new options from history (newest first)
+    paths.forEach(path => {
+        const option = document.createElement('option');
+        option.value = path;
+        datalist.appendChild(option);
+    });
+}
+
+/**
+ * Save a file path to history and update the corresponding datalist
+ */
+async function saveToHistory(key, path) {
+    if (!path) return;
+
+    try {
+        await SaveFilePathToHistory(key, path);
+
+        // Update the datalist
+        const datalistId = historyConfig[key];
+        if (datalistId) {
+            // Get the updated history and refresh the datalist
+            const history = await GetAllFileHistory();
+            if (history[key]) {
+                updateDatalist(datalistId, history[key]);
+            }
+        }
+    } catch (err) {
+        console.error('Error saving to history:', err);
+    }
+}
+
+/**
+ * Load file path history on startup and populate all datalists
+ */
+async function loadFilePathHistory() {
+    try {
+        const history = await GetAllFileHistory();
+
+        // Update each datalist
+        for (const [key, datalistId] of Object.entries(historyConfig)) {
+            const paths = history[key] || [];
+            updateDatalist(datalistId, paths);
+        }
+
+        // Also populate the most recent path in each input (optional - can be removed if not desired)
+        // This auto-fills the last used path on startup
+        const leftPath = history['diff-left']?.[0];
+        const rightPath = history['diff-right']?.[0];
+        const pathsPath = history['paths']?.[0];
+        const logsPath = history['logs']?.[0];
+        const cmpLeftPath = history['compare-left']?.[0];
+        const cmpRightPath = history['compare-right']?.[0];
+
+        if (leftPath) leftFilePathInput.value = leftPath;
+        if (rightPath) rightFilePathInput.value = rightPath;
+        if (pathsPath) pathsFilePathInput.value = pathsPath;
+        if (logsPath) logFilePathInput.value = logsPath;
+        if (cmpLeftPath) compareLeftPath.value = cmpLeftPath;
+        if (cmpRightPath) compareRightPath.value = cmpRightPath;
+    } catch (err) {
+        console.error('Error loading file path history:', err);
+    }
+}
+
+// ============================================================
 // Diff Tab - DOM Elements
 // ============================================================
 const leftTextarea = document.getElementById('left-json');
@@ -53,6 +144,8 @@ const formatLeftBtn = document.getElementById('format-left');
 const formatRightBtn = document.getElementById('format-right');
 const loadLeftBtn = document.getElementById('load-left');
 const loadRightBtn = document.getElementById('load-right');
+const reloadLeftBtn = document.getElementById('reload-left');
+const reloadRightBtn = document.getElementById('reload-right');
 const resultsDiv = document.getElementById('results');
 const statsDiv = document.getElementById('stats');
 
@@ -61,6 +154,11 @@ const optSortKeys = document.getElementById('opt-sort-keys');
 const optNormalizeNumbers = document.getElementById('opt-normalize-numbers');
 const optTrimStrings = document.getElementById('opt-trim-strings');
 const optNullEqualsAbsent = document.getElementById('opt-null-equals-absent');
+
+// View mode toggle
+const viewModeBtns = document.querySelectorAll('.view-mode-toggle .mode-btn');
+let currentViewMode = 'structured';
+let lastDiffResult = null; // Store the last diff result for view switching
 
 // ============================================================
 // Path Explorer Tab - DOM Elements
@@ -73,6 +171,7 @@ const formatPathsBtn = document.getElementById('format-paths');
 const loadPathsFileBtn = document.getElementById('load-paths-file');
 const pathsResultsDiv = document.getElementById('paths-results');
 const pathsStatsDiv = document.getElementById('paths-stats');
+const optIncludeContainers = document.getElementById('opt-include-containers');
 
 // ============================================================
 // Diff Tab - Event Listeners
@@ -82,6 +181,8 @@ formatLeftBtn.addEventListener('click', () => handleFormat('left'));
 formatRightBtn.addEventListener('click', () => handleFormat('right'));
 loadLeftBtn.addEventListener('click', () => handleLoadFile('left'));
 loadRightBtn.addEventListener('click', () => handleLoadFile('right'));
+reloadLeftBtn.addEventListener('click', () => handleReloadFile('left'));
+reloadRightBtn.addEventListener('click', () => handleReloadFile('right'));
 
 // File path inputs - load on Enter
 leftFilePathInput.addEventListener('keydown', (e) => {
@@ -104,6 +205,25 @@ leftTextarea.addEventListener('input', () => {
 rightTextarea.addEventListener('input', () => {
     clearTimeout(rightTimeout);
     rightTimeout = setTimeout(() => validateInput('right'), 300);
+});
+
+// View mode toggle
+viewModeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const viewMode = btn.dataset.view;
+
+        // Update button states
+        viewModeBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Update current view mode
+        currentViewMode = viewMode;
+
+        // Re-render results if we have a diff
+        if (lastDiffResult) {
+            displayDiffInCurrentMode(lastDiffResult);
+        }
+    });
 });
 
 // ============================================================
@@ -147,6 +267,26 @@ logFilePathInput.addEventListener('keydown', (e) => {
 // ============================================================
 // Shared Functions
 // ============================================================
+
+/**
+ * Check if both diff panels have valid JSON and auto-compare if so
+ */
+async function tryAutoCompare() {
+    const leftValue = leftTextarea.value.trim();
+    const rightValue = rightTextarea.value.trim();
+
+    // Both panels must have content
+    if (!leftValue || !rightValue) return;
+
+    // Both must be valid JSON
+    const leftValid = await validateInput('left');
+    const rightValid = await validateInput('right');
+
+    if (leftValid && rightValid) {
+        // Both sides are valid - trigger comparison
+        await handleCompare();
+    }
+}
 
 /**
  * Validate JSON input and show error if invalid
@@ -235,13 +375,38 @@ async function handleFormatPaths() {
 }
 
 /**
- * Load a JSON file into the specified textarea (diff tab) via file dialog
+ * Load a JSON file into the specified textarea (diff tab).
+ * If a path is provided in the input, try to load that file.
+ * If no path or invalid path, open the file picker.
  */
 async function handleLoadFile(side) {
     const textarea = side === 'left' ? leftTextarea : rightTextarea;
     const pathInput = side === 'left' ? leftFilePathInput : rightFilePathInput;
     const errorDiv = side === 'left' ? leftError : rightError;
+    const historyKey = side === 'left' ? 'diff-left' : 'diff-right';
 
+    const existingPath = pathInput.value.trim();
+
+    // If there's a path, try to load it first
+    if (existingPath) {
+        try {
+            const content = await ReadFilePath(existingPath);
+            textarea.value = content;
+            errorDiv.textContent = '';
+            validateInput(side);
+
+            // Save to history
+            await saveToHistory(historyKey, existingPath);
+
+            // Auto-compare if both sides have valid JSON
+            await tryAutoCompare();
+            return;
+        } catch {
+            // Path is invalid, fall through to file picker
+        }
+    }
+
+    // No path or invalid path - open file picker
     try {
         const result = await OpenJSONFileWithPath();
         if (!result) return;
@@ -250,6 +415,12 @@ async function handleLoadFile(side) {
         pathInput.value = result.path;
         errorDiv.textContent = '';
         validateInput(side);
+
+        // Save to history
+        await saveToHistory(historyKey, result.path);
+
+        // Auto-compare if both sides have valid JSON
+        await tryAutoCompare();
     } catch (err) {
         errorDiv.textContent = err.message || 'Error loading file';
     }
@@ -262,6 +433,7 @@ async function handleLoadFromPath(side) {
     const textarea = side === 'left' ? leftTextarea : rightTextarea;
     const pathInput = side === 'left' ? leftFilePathInput : rightFilePathInput;
     const errorDiv = side === 'left' ? leftError : rightError;
+    const historyKey = side === 'left' ? 'diff-left' : 'diff-right';
 
     const path = pathInput.value.trim();
     if (!path) {
@@ -274,15 +446,73 @@ async function handleLoadFromPath(side) {
         textarea.value = content;
         errorDiv.textContent = '';
         validateInput(side);
+
+        // Save to history
+        await saveToHistory(historyKey, path);
+
+        // Auto-compare if both sides have valid JSON
+        await tryAutoCompare();
     } catch (err) {
         errorDiv.textContent = err.message || 'Error loading file';
     }
 }
 
 /**
- * Load a JSON file into paths textarea via file dialog
+ * Reload the current file from disk
+ */
+async function handleReloadFile(side) {
+    const textarea = side === 'left' ? leftTextarea : rightTextarea;
+    const pathInput = side === 'left' ? leftFilePathInput : rightFilePathInput;
+    const errorDiv = side === 'left' ? leftError : rightError;
+
+    const path = pathInput.value.trim();
+    if (!path) {
+        errorDiv.textContent = 'No file loaded to reload';
+        return;
+    }
+
+    try {
+        const content = await ReadFilePath(path);
+        textarea.value = content;
+        errorDiv.textContent = '';
+        validateInput(side);
+
+        // Show success feedback
+        const fileName = path.split('/').pop();
+        showCopyFeedback(`✓ Reloaded ${fileName}`);
+
+        // Auto-compare after reload
+        await tryAutoCompare();
+    } catch (err) {
+        errorDiv.textContent = err.message || 'Error reloading file';
+    }
+}
+
+/**
+ * Load a JSON file into paths textarea.
+ * If a path is provided in the input, try to load that file.
+ * If no path or invalid path, open the file picker.
  */
 async function handleLoadPathsFile() {
+    const existingPath = pathsFilePathInput.value.trim();
+
+    // If there's a path, try to load it first
+    if (existingPath) {
+        try {
+            const content = await ReadFilePath(existingPath);
+            pathsTextarea.value = content;
+            pathsError.textContent = '';
+            validatePathsInput();
+
+            // Save to history
+            await saveToHistory('paths', existingPath);
+            return;
+        } catch {
+            // Path is invalid, fall through to file picker
+        }
+    }
+
+    // No path or invalid path - open file picker
     try {
         const result = await OpenJSONFileWithPath();
         if (!result) return;
@@ -291,6 +521,9 @@ async function handleLoadPathsFile() {
         pathsFilePathInput.value = result.path;
         pathsError.textContent = '';
         validatePathsInput();
+
+        // Save to history
+        await saveToHistory('paths', result.path);
     } catch (err) {
         pathsError.textContent = err.message || 'Error loading file';
     }
@@ -311,6 +544,9 @@ async function handleLoadPathsFromPath() {
         pathsTextarea.value = content;
         pathsError.textContent = '';
         validatePathsInput();
+
+        // Save to history
+        await saveToHistory('paths', path);
     } catch (err) {
         pathsError.textContent = err.message || 'Error loading file';
     }
@@ -353,10 +589,30 @@ async function handleCompare() {
         const options = getNormalizeOptions();
         const result = await CompareJSONWithOptions(leftValue, rightValue, options);
 
+        // Store the result and raw values for view switching
+        lastDiffResult = {
+            result: result,
+            leftValue: leftValue,
+            rightValue: rightValue
+        };
+
         displayStats(result.stats);
-        displayDiff(result.root);
+        displayDiffInCurrentMode(lastDiffResult);
     } catch (err) {
         resultsDiv.innerHTML = `<p class="error">${escapeHtml(err.message || 'Comparison failed')}</p>`;
+    }
+}
+
+/**
+ * Display diff in the current view mode
+ */
+function displayDiffInCurrentMode(diffData) {
+    resultsDiv.innerHTML = '';
+
+    if (currentViewMode === 'structured') {
+        displayDiff(diffData.result.root);
+    } else {
+        displaySideBySideDiff(diffData.leftValue, diffData.rightValue);
     }
 }
 
@@ -460,6 +716,136 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
+/**
+ * Display side-by-side diff view
+ */
+/**
+ * Recursively sort object keys for consistent display
+ */
+function sortObjectKeys(obj) {
+    if (obj === null || typeof obj !== 'object') {
+        return obj;
+    }
+
+    if (Array.isArray(obj)) {
+        return obj.map(sortObjectKeys);
+    }
+
+    // Sort keys alphabetically and recursively process values
+    const sorted = {};
+    const keys = Object.keys(obj).sort();
+    for (const key of keys) {
+        sorted[key] = sortObjectKeys(obj[key]);
+    }
+    return sorted;
+}
+
+function displaySideBySideDiff(leftValue, rightValue) {
+    // Get current normalization options
+    const shouldSortKeys = optSortKeys.checked;
+
+    // Parse and format both JSON values
+    let leftLines, rightLines;
+    try {
+        let leftObj = JSON.parse(leftValue);
+        if (shouldSortKeys) {
+            leftObj = sortObjectKeys(leftObj);
+        }
+        leftLines = JSON.stringify(leftObj, null, 2).split('\n');
+    } catch {
+        leftLines = leftValue.split('\n');
+    }
+
+    try {
+        let rightObj = JSON.parse(rightValue);
+        if (shouldSortKeys) {
+            rightObj = sortObjectKeys(rightObj);
+        }
+        rightLines = JSON.stringify(rightObj, null, 2).split('\n');
+    } catch {
+        rightLines = rightValue.split('\n');
+    }
+
+    // Create container
+    const container = document.createElement('div');
+    container.className = 'sidebyside-container';
+
+    // Create left panel
+    const leftPanel = document.createElement('div');
+    leftPanel.className = 'sidebyside-panel';
+    leftPanel.innerHTML = `
+        <div class="sidebyside-header">Left (Original)</div>
+        <div class="sidebyside-content" id="sidebyside-left"></div>
+    `;
+
+    // Create right panel
+    const rightPanel = document.createElement('div');
+    rightPanel.className = 'sidebyside-panel';
+    rightPanel.innerHTML = `
+        <div class="sidebyside-header">Right (Modified)</div>
+        <div class="sidebyside-content" id="sidebyside-right"></div>
+    `;
+
+    container.appendChild(leftPanel);
+    container.appendChild(rightPanel);
+    resultsDiv.appendChild(container);
+
+    // Get content divs
+    const leftContent = document.getElementById('sidebyside-left');
+    const rightContent = document.getElementById('sidebyside-right');
+
+    // Simple line-by-line comparison
+    const maxLines = Math.max(leftLines.length, rightLines.length);
+
+    for (let i = 0; i < maxLines; i++) {
+        const leftLine = i < leftLines.length ? leftLines[i] : null;
+        const rightLine = i < rightLines.length ? rightLines[i] : null;
+
+        // Determine line status
+        let leftClass = '';
+        let rightClass = '';
+
+        if (leftLine !== null && rightLine !== null) {
+            if (leftLine !== rightLine) {
+                leftClass = 'line-changed';
+                rightClass = 'line-changed';
+            }
+        } else if (leftLine !== null && rightLine === null) {
+            leftClass = 'line-removed';
+            rightClass = 'line-empty';
+        } else if (leftLine === null && rightLine !== null) {
+            leftClass = 'line-empty';
+            rightClass = 'line-added';
+        }
+
+        // Create left line
+        const leftLineDiv = document.createElement('div');
+        leftLineDiv.className = `sidebyside-line ${leftClass}`;
+        leftLineDiv.innerHTML = `
+            <div class="line-number">${leftLine !== null ? i + 1 : ''}</div>
+            <div class="line-content">${leftLine !== null ? escapeHtml(leftLine) : ''}</div>
+        `;
+        leftContent.appendChild(leftLineDiv);
+
+        // Create right line
+        const rightLineDiv = document.createElement('div');
+        rightLineDiv.className = `sidebyside-line ${rightClass}`;
+        rightLineDiv.innerHTML = `
+            <div class="line-number">${rightLine !== null ? i + 1 : ''}</div>
+            <div class="line-content">${rightLine !== null ? escapeHtml(rightLine) : ''}</div>
+        `;
+        rightContent.appendChild(rightLineDiv);
+    }
+
+    // Sync scrolling between both panels
+    leftContent.addEventListener('scroll', () => {
+        rightContent.scrollTop = leftContent.scrollTop;
+    });
+    rightContent.addEventListener('scroll', () => {
+        leftContent.scrollTop = rightContent.scrollTop;
+    });
+}
+
 // ============================================================
 // Path Explorer Tab - Core Functions
 // ============================================================
@@ -479,7 +865,8 @@ async function handleExtractPaths() {
     }
 
     try {
-        const result = await GetJSONPaths(value);
+        const includeContainers = optIncludeContainers.checked;
+        const result = await GetJSONPathsWithContainers(value, includeContainers);
 
         displayPathsStats(result);
         displayPaths(result.paths);
@@ -541,9 +928,33 @@ function displayPaths(paths) {
 // ============================================================
 
 /**
- * Analyze a log file for JSON paths (via file dialog)
+ * Analyze a log file for JSON paths.
+ * If a path is provided in the input, try to analyze that file.
+ * If no path or invalid path, open the file picker.
  */
 async function handleAnalyzeLogFile() {
+    const existingPath = logFilePathInput.value.trim();
+
+    // If there's a path, try to analyze it first
+    if (existingPath) {
+        logResultsDiv.innerHTML = '<p class="placeholder">Analyzing file...</p>';
+        logStatsDiv.textContent = '';
+
+        try {
+            const result = await AnalyzeLogFilePath(existingPath);
+
+            displayLogStats(result);
+            displayLogPaths(result.paths);
+
+            // Save to history
+            await saveToHistory('logs', existingPath);
+            return;
+        } catch {
+            // Path is invalid, fall through to file picker
+        }
+    }
+
+    // No path or invalid path - open file picker
     logResultsDiv.innerHTML = '<p class="placeholder">Analyzing file...</p>';
     logStatsDiv.textContent = '';
 
@@ -561,6 +972,9 @@ async function handleAnalyzeLogFile() {
 
         displayLogStats(response.result);
         displayLogPaths(response.result.paths);
+
+        // Save to history
+        await saveToHistory('logs', response.path);
     } catch (err) {
         logResultsDiv.innerHTML = `<p class="error">${escapeHtml(err.message || 'Analysis failed')}</p>`;
     }
@@ -585,6 +999,9 @@ async function handleAnalyzeFromPath() {
 
         displayLogStats(result);
         displayLogPaths(result.paths);
+
+        // Save to history
+        await saveToHistory('logs', path);
     } catch (err) {
         logResultsDiv.innerHTML = `<p class="error">${escapeHtml(err.message || 'Analysis failed')}</p>`;
     }
@@ -834,12 +1251,48 @@ optShowTopValues.addEventListener('change', renderComparison);
 // ============================================================
 
 /**
- * Load and analyze a file for comparison (left or right)
+ * Load and analyze a file for comparison (left or right).
+ * If a path is provided in the input, try to analyze that file.
+ * If no path or invalid path, open the file picker.
  */
 async function handleCompareLoadFile(side) {
     const pathInput = side === 'left' ? compareLeftPath : compareRightPath;
     const infoDiv = side === 'left' ? compareLeftInfo : compareRightInfo;
+    const historyKey = side === 'left' ? 'compare-left' : 'compare-right';
 
+    const existingPath = pathInput.value.trim();
+
+    // If there's a path, try to analyze it first
+    if (existingPath) {
+        infoDiv.innerHTML = 'Analyzing file...';
+
+        try {
+            const result = await AnalyzeLogFilePath(existingPath);
+
+            // Store the result
+            if (side === 'left') {
+                leftAnalysisResult = result;
+            } else {
+                rightAnalysisResult = result;
+            }
+
+            // Update UI
+            displayCompareFileInfo(result, infoDiv);
+
+            // Enable compare button if both files are loaded
+            if (leftAnalysisResult && rightAnalysisResult) {
+                compareAnalysesBtn.disabled = false;
+            }
+
+            // Save to history
+            await saveToHistory(historyKey, existingPath);
+            return;
+        } catch {
+            // Path is invalid, fall through to file picker
+        }
+    }
+
+    // No path or invalid path - open file picker
     infoDiv.innerHTML = 'Loading file...';
 
     try {
@@ -866,6 +1319,9 @@ async function handleCompareLoadFile(side) {
         if (leftAnalysisResult && rightAnalysisResult) {
             compareAnalysesBtn.disabled = false;
         }
+
+        // Save to history
+        await saveToHistory(historyKey, response.path);
     } catch (err) {
         infoDiv.innerHTML = `<span style="color: var(--error-color)">Error: ${escapeHtml(err.message)}</span>`;
     }
@@ -877,6 +1333,7 @@ async function handleCompareLoadFile(side) {
 async function handleCompareLoadFromPath(side) {
     const pathInput = side === 'left' ? compareLeftPath : compareRightPath;
     const infoDiv = side === 'left' ? compareLeftInfo : compareRightInfo;
+    const historyKey = side === 'left' ? 'compare-left' : 'compare-right';
 
     const path = pathInput.value.trim();
     if (!path) {
@@ -903,6 +1360,9 @@ async function handleCompareLoadFromPath(side) {
         if (leftAnalysisResult && rightAnalysisResult) {
             compareAnalysesBtn.disabled = false;
         }
+
+        // Save to history
+        await saveToHistory(historyKey, path);
     } catch (err) {
         infoDiv.innerHTML = `<span style="color: var(--error-color)">Error: ${escapeHtml(err.message)}</span>`;
     }
@@ -1164,3 +1624,11 @@ async function copyJqCommandForComparison(path, side) {
         console.error('Failed to copy:', err);
     }
 }
+
+// ============================================================
+// Initialization
+// ============================================================
+
+// Load file path history when the app starts
+// This file is loaded as a module, so DOM is already ready
+loadFilePathHistory();

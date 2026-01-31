@@ -20,35 +20,7 @@
         <main>
             <!-- Tab 1: JSON Diff -->
             <div id="tab-diff" class="tab-content active">
-                <div class="editor-container">
-                    <div class="editor-panel">
-                        <div class="panel-header">
-                            <span>Left (Original)</span>
-                            <input type="text" id="left-file-path" class="file-path-input" placeholder="Paste file path...">
-                            <div class="panel-buttons">
-                                <button class="btn-small" id="load-left">Load File</button>
-                                <button class="btn-small" id="format-left">Format</button>
-                            </div>
-                        </div>
-                        <textarea id="left-json" placeholder="Paste JSON here or click 'Load File'..."></textarea>
-                        <div class="error-message" id="left-error"></div>
-                    </div>
-
-                    <div class="editor-panel">
-                        <div class="panel-header">
-                            <span>Right (Modified)</span>
-                            <input type="text" id="right-file-path" class="file-path-input" placeholder="Paste file path...">
-                            <div class="panel-buttons">
-                                <button class="btn-small" id="load-right">Load File</button>
-                                <button class="btn-small" id="format-right">Format</button>
-                            </div>
-                        </div>
-                        <textarea id="right-json" placeholder="Paste JSON here or click 'Load File'..."></textarea>
-                        <div class="error-message" id="right-error"></div>
-                    </div>
-                </div>
-
-                <div class="controls">
+                <div class="controls controls-horizontal">
                     <div class="options-panel">
                         <span class="options-label">Normalization:</span>
                         <label class="checkbox-label" title="Treat {b:1, a:2} as equal to {a:2, b:1}">
@@ -68,7 +40,43 @@
                             Null = Absent
                         </label>
                     </div>
+                    <div class="view-mode-toggle">
+                        <button class="mode-btn active" data-view="structured">Structured</button>
+                        <button class="mode-btn" data-view="sidebyside">Side-by-Side</button>
+                    </div>
                     <button class="btn-primary" id="compare-btn">Compare</button>
+                </div>
+
+                <div class="editor-container">
+                    <div class="editor-panel">
+                        <div class="panel-header">
+                            <span>Left (Original)</span>
+                            <input type="text" id="left-file-path" class="file-path-input" placeholder="Paste file path..." list="left-file-history">
+                            <datalist id="left-file-history"></datalist>
+                            <div class="panel-buttons">
+                                <button class="btn-small" id="load-left">Load File</button>
+                                <button class="btn-small" id="reload-left" title="Reload file from disk">Reload</button>
+                                <button class="btn-small" id="format-left">Format</button>
+                            </div>
+                        </div>
+                        <textarea id="left-json" placeholder="Paste JSON here or click 'Load File'..."></textarea>
+                        <div class="error-message" id="left-error"></div>
+                    </div>
+
+                    <div class="editor-panel">
+                        <div class="panel-header">
+                            <span>Right (Modified)</span>
+                            <input type="text" id="right-file-path" class="file-path-input" placeholder="Paste file path..." list="right-file-history">
+                            <datalist id="right-file-history"></datalist>
+                            <div class="panel-buttons">
+                                <button class="btn-small" id="load-right">Load File</button>
+                                <button class="btn-small" id="reload-right" title="Reload file from disk">Reload</button>
+                                <button class="btn-small" id="format-right">Format</button>
+                            </div>
+                        </div>
+                        <textarea id="right-json" placeholder="Paste JSON here or click 'Load File'..."></textarea>
+                        <div class="error-message" id="right-error"></div>
+                    </div>
                 </div>
 
                 <div class="results-container" id="results-container">
@@ -84,11 +92,22 @@
 
             <!-- Tab 2: Path Explorer -->
             <div id="tab-paths" class="tab-content">
+                <div class="controls controls-horizontal">
+                    <div class="options-panel">
+                        <label class="checkbox-label" title="Include paths to objects and arrays, not just leaf values">
+                            <input type="checkbox" id="opt-include-containers">
+                            Show container paths
+                        </label>
+                    </div>
+                    <button class="btn-primary" id="extract-btn">Extract Paths</button>
+                </div>
+
                 <div class="editor-container single-panel">
                     <div class="editor-panel">
                         <div class="panel-header">
                             <span>JSON Input</span>
-                            <input type="text" id="paths-file-path" class="file-path-input" placeholder="Paste file path...">
+                            <input type="text" id="paths-file-path" class="file-path-input" placeholder="Paste file path..." list="paths-file-history">
+                            <datalist id="paths-file-history"></datalist>
                             <div class="panel-buttons">
                                 <button class="btn-small" id="load-paths-file">Load File</button>
                                 <button class="btn-small" id="format-paths">Format</button>
@@ -97,10 +116,6 @@
                         <textarea id="paths-json" placeholder="Paste JSON here or click 'Load File'..."></textarea>
                         <div class="error-message" id="paths-error"></div>
                     </div>
-                </div>
-
-                <div class="controls">
-                    <button class="btn-primary" id="extract-btn">Extract Paths</button>
                 </div>
 
                 <div class="results-container">
@@ -116,22 +131,21 @@
 
             <!-- Tab 3: Log Analyzer -->
             <div id="tab-logs" class="tab-content">
-                <!-- Mode Toggle -->
-                <div class="log-mode-toggle">
-                    <button class="mode-btn active" data-mode="single">Single Analysis</button>
-                    <button class="mode-btn" data-mode="compare">Compare Files</button>
+                <!-- Controls Row: Mode Toggle -->
+                <div class="controls controls-horizontal">
+                    <div class="log-mode-toggle">
+                        <button class="mode-btn active" data-mode="single">Single Analysis</button>
+                        <button class="mode-btn" data-mode="compare">Compare Files</button>
+                    </div>
                 </div>
 
                 <!-- Single Analysis Mode -->
                 <div id="log-single-mode" class="analysis-mode">
-                    <div class="controls log-controls">
-                        <p class="description">
-                            Analyze log files with mixed content (logs + JSON).
-                            Extracts all JSON lines and aggregates path statistics.
-                        </p>
+                    <div class="controls controls-horizontal">
                         <div class="file-input-row">
                             <button class="btn-small" id="analyze-file-btn">Load File</button>
-                            <input type="text" id="log-file-path" class="file-path-input" placeholder="Or paste file path and press Enter...">
+                            <input type="text" id="log-file-path" class="file-path-input" placeholder="Paste file path and press Enter..." list="logs-file-history">
+                            <datalist id="logs-file-history"></datalist>
                         </div>
                     </div>
 
@@ -148,8 +162,19 @@
 
                 <!-- Compare Mode -->
                 <div id="log-compare-mode" class="analysis-mode" style="display: none;">
-                    <div class="compare-description">
-                        <p>Compare two log files to see which JSON paths were added/removed and how statistics changed (e.g., main branch vs WIP branch).</p>
+                    <!-- Compare Options Row -->
+                    <div class="controls controls-horizontal">
+                        <div class="options-panel">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="opt-show-only-changes">
+                                Show only changes
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="opt-show-top-values">
+                                Show top values
+                            </label>
+                        </div>
+                        <button class="btn-primary" id="compare-analyses-btn" disabled>Compare</button>
                     </div>
 
                     <!-- Dual File Inputs -->
@@ -160,7 +185,8 @@
                             </div>
                             <div class="file-input-row">
                                 <button class="btn-small" id="compare-left-load">Load File</button>
-                                <input type="text" id="compare-left-path" class="file-path-input" placeholder="Or paste file path and press Enter...">
+                                <input type="text" id="compare-left-path" class="file-path-input" placeholder="Paste file path and press Enter..." list="compare-left-history">
+                                <datalist id="compare-left-history"></datalist>
                             </div>
                             <div class="file-info" id="compare-left-info"></div>
                         </div>
@@ -171,25 +197,11 @@
                             </div>
                             <div class="file-input-row">
                                 <button class="btn-small" id="compare-right-load">Load File</button>
-                                <input type="text" id="compare-right-path" class="file-path-input" placeholder="Or paste file path and press Enter...">
+                                <input type="text" id="compare-right-path" class="file-path-input" placeholder="Paste file path and press Enter..." list="compare-right-history">
+                                <datalist id="compare-right-history"></datalist>
                             </div>
                             <div class="file-info" id="compare-right-info"></div>
                         </div>
-                    </div>
-
-                    <!-- Compare Options and Button -->
-                    <div class="controls">
-                        <div class="compare-options">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="opt-show-only-changes">
-                                Show only changes
-                            </label>
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="opt-show-top-values">
-                                Show top values
-                            </label>
-                        </div>
-                        <button class="btn-primary" id="compare-analyses-btn" disabled>Compare Analysis Results</button>
                     </div>
 
                     <!-- Comparison Results -->

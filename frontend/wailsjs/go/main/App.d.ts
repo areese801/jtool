@@ -21,15 +21,25 @@ export function CompareLogFiles(arg1:string,arg2:string):Promise<loganalyzer.Com
 
 export function FormatJSON(arg1:string):Promise<string>;
 
+export function GetAllFileHistory():Promise<Record<string, Array<string>>>;
+
 export function GetDefaultNormalizeOptions():Promise<main.NormalizeOptions>;
 
+export function GetFileHistory(arg1:string):Promise<Array<string>>;
+
 export function GetJSONPaths(arg1:string):Promise<paths.PathResult>;
+
+export function GetJSONPathsWithContainers(arg1:string,arg2:boolean):Promise<paths.PathResult>;
+
+export function GetMostRecentFilePath(arg1:string):Promise<string>;
 
 export function OpenJSONFile():Promise<string>;
 
 export function OpenJSONFileWithPath():Promise<main.FileResult>;
 
 export function ReadFilePath(arg1:string):Promise<string>;
+
+export function SaveFilePathToHistory(arg1:string,arg2:string):Promise<void>;
 
 export function SelectAndAnalyzeLogFile():Promise<main.LogFileResult>;
 

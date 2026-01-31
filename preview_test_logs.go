@@ -4,7 +4,7 @@ package main
 
 import (
 	"fmt"
-	"jsondiff/internal/loganalyzer"
+	"jtool/internal/loganalyzer"
 )
 
 func main() {

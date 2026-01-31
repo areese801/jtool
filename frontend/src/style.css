@@ -146,13 +146,16 @@ main {
 }
 
 .panel-header .file-path-input {
-    flex: 1;
+    flex: 1 1 auto;
     min-width: 0;
+    max-width: none;
+    width: 100%;
 }
 
 .panel-buttons {
     display: flex;
     gap: 6px;
+    flex-shrink: 0;
 }
 
 .editor-panel textarea {
@@ -222,6 +225,119 @@ main {
     align-items: center;
     gap: 12px;
     flex-shrink: 0;
+}
+
+/* Horizontal controls layout - button to the right of options */
+.controls-horizontal {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 16px;
+}
+
+/* View mode toggle */
+.view-mode-toggle {
+    display: flex;
+    gap: 0;
+    padding: 4px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+}
+
+/* Side-by-Side Diff View */
+.sidebyside-container {
+    display: flex;
+    gap: 16px;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+    font-size: 13px;
+}
+
+.sidebyside-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.sidebyside-header {
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.sidebyside-content {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--bg-secondary);
+}
+
+.sidebyside-line {
+    display: flex;
+    min-height: 20px;
+    line-height: 20px;
+}
+
+.line-number {
+    flex-shrink: 0;
+    width: 40px;
+    padding: 0 8px;
+    text-align: right;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    border-right: 1px solid var(--border-color);
+    user-select: none;
+    font-size: 12px;
+}
+
+.line-content {
+    flex: 1;
+    padding: 0 12px;
+    white-space: pre;
+    overflow-x: auto;
+}
+
+/* Line highlighting for side-by-side diff */
+.sidebyside-line.line-added {
+    background: var(--diff-added-bg);
+}
+
+.sidebyside-line.line-added .line-content {
+    color: var(--diff-added);
+}
+
+.sidebyside-line.line-removed {
+    background: var(--diff-removed-bg);
+}
+
+.sidebyside-line.line-removed .line-content {
+    color: var(--diff-removed);
+}
+
+.sidebyside-line.line-changed {
+    background: var(--diff-changed-bg);
+}
+
+.sidebyside-line.line-changed .line-content {
+    color: var(--diff-changed);
+}
+
+.sidebyside-line.line-empty {
+    background: var(--bg-tertiary);
+    opacity: 0.5;
+}
+
+.sidebyside-line.line-empty .line-content {
+    color: var(--text-secondary);
 }
 
 /* Options Panel */
@@ -447,17 +563,7 @@ main {
 }
 
 /* Log Analyzer */
-.log-controls {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-}
-
-.log-controls .description {
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    margin: 0;
-}
+/* (Uses .controls-horizontal pattern) */
 
 .file-input-row {
     display: flex;
@@ -467,7 +573,8 @@ main {
 }
 
 .file-path-input {
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;
     padding: 6px 10px;
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -484,6 +591,11 @@ main {
 
 .file-path-input::placeholder {
     color: var(--text-secondary);
+}
+
+/* Ensure datalist doesn't take up space in flex layouts */
+datalist {
+    display: none;
 }
 
 .path-table .objects-cell {
@@ -600,7 +712,6 @@ main {
     border: 1px solid var(--border-color);
     border-radius: 6px;
     width: fit-content;
-    margin-bottom: 12px;
 }
 
 .mode-btn {

@@ -25,7 +25,13 @@ type PathResult struct {
 	TotalLeafs int        `json:"totalLeafs"` // Total leaf values (sum of counts)
 }
 
+// ExtractOptions configures path extraction behavior.
+type ExtractOptions struct {
+	IncludeContainers bool // If true, include paths to objects and arrays, not just leaf values
+}
+
 // Extract walks a JSON structure and returns all paths to leaf values.
+// This is the default behavior (does not include container paths).
 //
 // Python equivalent:
 //
@@ -36,12 +42,17 @@ type PathResult struct {
 //
 // Key Go difference: We use type switches instead of isinstance() checks.
 func Extract(data any) *PathResult {
+	return ExtractWithOptions(data, ExtractOptions{IncludeContainers: false})
+}
+
+// ExtractWithOptions walks a JSON structure and returns paths based on the provided options.
+func ExtractWithOptions(data any, opts ExtractOptions) *PathResult {
 	// Map to count occurrences of each path
 	// Python: paths = defaultdict(int)
 	pathCounts := make(map[string]int)
 
 	// Recursively extract paths (starting with empty prefix for jq compatibility)
-	extractPaths("", data, pathCounts)
+	extractPathsWithOptions("", data, pathCounts, opts)
 
 	// Convert map to sorted slice
 	// Go maps have random iteration order, so we must sort explicitly
@@ -66,7 +77,7 @@ func Extract(data any) *PathResult {
 	}
 }
 
-// extractPaths recursively walks the JSON structure.
+// extractPaths recursively walks the JSON structure (legacy version, only extracts leaf paths).
 //
 // Python equivalent:
 //
@@ -107,6 +118,38 @@ func extractPaths(prefix string, value any, counts map[string]int) {
 		// Leaf value (string, number, bool, null)
 		// This is an atomic value - record the path
 		// Python: result_set[json_path] += 1
+		counts[prefix]++
+	}
+}
+
+// extractPathsWithOptions recursively walks the JSON structure with options support.
+func extractPathsWithOptions(prefix string, value any, counts map[string]int, opts ExtractOptions) {
+	switch v := value.(type) {
+	case map[string]any:
+		// Object: optionally record the container path, then recurse into each key
+		if opts.IncludeContainers && prefix != "" {
+			counts[prefix]++
+		}
+
+		for key, val := range v {
+			childPath := prefix + "." + key
+			extractPathsWithOptions(childPath, val, counts, opts)
+		}
+
+	case []any:
+		// Array: optionally record the container path, then recurse into elements
+		if opts.IncludeContainers && prefix != "" {
+			counts[prefix]++
+		}
+
+		for _, item := range v {
+			childPath := prefix + "[]"
+			extractPathsWithOptions(childPath, item, counts, opts)
+		}
+
+	default:
+		// Leaf value (string, number, bool, null)
+		// This is an atomic value - always record the path
 		counts[prefix]++
 	}
 }
