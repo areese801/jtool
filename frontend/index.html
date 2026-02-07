@@ -9,12 +9,17 @@
 <body>
     <div id="app">
         <header>
-            <h1><img src="./src/assets/images/appicon.png" alt="jtool" class="app-icon"></h1>
             <nav class="tab-nav">
                 <button class="tab-btn active" data-tab="diff">Diff</button>
                 <button class="tab-btn" data-tab="paths">Path Explorer</button>
                 <button class="tab-btn" data-tab="logs">Log Analyzer</button>
             </nav>
+            <a href="https://buymeacoffee.com/areese801" target="_blank" class="bmc-link" title="Buy me a coffee">
+                <svg viewBox="0 0 24 24" fill="currentColor" class="bmc-icon">
+                    <path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z"/>
+                </svg>
+            </a>
+            <img src="./src/assets/images/appicon.png" alt="jtool" class="app-icon">
         </header>
 
         <main>
@@ -51,8 +56,7 @@
                     <div class="editor-panel">
                         <div class="panel-header">
                             <span>Left (Original)</span>
-                            <input type="text" id="left-file-path" class="file-path-input" placeholder="Paste file path..." list="left-file-history">
-                            <datalist id="left-file-history"></datalist>
+                            <input type="text" id="left-file-path" class="file-path-input" placeholder="Paste file path...">
                             <div class="panel-buttons">
                                 <button class="btn-small" id="load-left">Load File</button>
                                 <button class="btn-small" id="reload-left" title="Reload file from disk">Reload</button>
@@ -66,8 +70,7 @@
                     <div class="editor-panel">
                         <div class="panel-header">
                             <span>Right (Modified)</span>
-                            <input type="text" id="right-file-path" class="file-path-input" placeholder="Paste file path..." list="right-file-history">
-                            <datalist id="right-file-history"></datalist>
+                            <input type="text" id="right-file-path" class="file-path-input" placeholder="Paste file path...">
                             <div class="panel-buttons">
                                 <button class="btn-small" id="load-right">Load File</button>
                                 <button class="btn-small" id="reload-right" title="Reload file from disk">Reload</button>
@@ -106,8 +109,7 @@
                     <div class="editor-panel">
                         <div class="panel-header">
                             <span>JSON Input</span>
-                            <input type="text" id="paths-file-path" class="file-path-input" placeholder="Paste file path..." list="paths-file-history">
-                            <datalist id="paths-file-history"></datalist>
+                            <input type="text" id="paths-file-path" class="file-path-input" placeholder="Paste file path...">
                             <div class="panel-buttons">
                                 <button class="btn-small" id="load-paths-file">Load File</button>
                                 <button class="btn-small" id="format-paths">Format</button>
@@ -144,8 +146,7 @@
                     <div class="controls controls-horizontal">
                         <div class="file-input-row">
                             <button class="btn-small" id="analyze-file-btn">Load File</button>
-                            <input type="text" id="log-file-path" class="file-path-input" placeholder="Paste file path and press Enter..." list="logs-file-history">
-                            <datalist id="logs-file-history"></datalist>
+                            <input type="text" id="log-file-path" class="file-path-input" placeholder="Paste file path and press Enter...">
                         </div>
                     </div>
 
@@ -189,8 +190,7 @@
                             </div>
                             <div class="file-input-row">
                                 <button class="btn-small" id="compare-left-load">Load File</button>
-                                <input type="text" id="compare-left-path" class="file-path-input" placeholder="Paste file path and press Enter..." list="compare-left-history">
-                                <datalist id="compare-left-history"></datalist>
+                                <input type="text" id="compare-left-path" class="file-path-input" placeholder="Paste file path and press Enter...">
                             </div>
                             <div class="file-info" id="compare-left-info"></div>
                         </div>
@@ -201,8 +201,7 @@
                             </div>
                             <div class="file-input-row">
                                 <button class="btn-small" id="compare-right-load">Load File</button>
-                                <input type="text" id="compare-right-path" class="file-path-input" placeholder="Paste file path and press Enter..." list="compare-right-history">
-                                <datalist id="compare-right-history"></datalist>
+                                <input type="text" id="compare-right-path" class="file-path-input" placeholder="Paste file path and press Enter...">
                             </div>
                             <div class="file-info" id="compare-right-info"></div>
                         </div>

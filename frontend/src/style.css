@@ -47,17 +47,28 @@ header {
     gap: 24px;
 }
 
-header h1 {
-    font-size: 1.5rem;
-    font-weight: 500;
-    color: var(--text-primary);
-    line-height: 1;
+.bmc-link {
+    display: flex;
+    align-items: center;
+    color: var(--text-secondary);
+    transition: color 0.2s;
+}
+
+.bmc-link:hover {
+    color: #ffdd00;
+}
+
+.bmc-icon {
+    width: 24px;
+    height: 24px;
 }
 
 .app-icon {
-    height: 32px;
-    width: 32px;
-    vertical-align: middle;
+    height: 64px;
+    width: 64px;
+    margin-left: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
 }
 
 /* Tab Navigation */
@@ -156,7 +167,27 @@ main {
     flex: 1 1 auto;
     min-width: 0;
     max-width: none;
-    width: 100%;
+}
+
+/* Hide datalist dropdown arrow in WebKit browsers */
+.file-path-input::-webkit-calendar-picker-indicator {
+    display: none !important;
+}
+
+.file-path-input::-webkit-list-button {
+    display: none !important;
+}
+
+.file-path-input::-webkit-input-list-button {
+    display: none !important;
+}
+
+input[list]::-webkit-calendar-picker-indicator,
+input[list]::-webkit-list-button {
+    display: none !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 
 .panel-buttons {
@@ -589,6 +620,11 @@ main {
     color: var(--text-primary);
     font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
     font-size: 0.8rem;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 .file-path-input:focus {

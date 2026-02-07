@@ -1,5 +1,8 @@
 import './style.css';
 
+// Import Wails runtime for browser operations
+import { BrowserOpenURL } from '../wailsjs/runtime/runtime';
+
 // Import Go functions exposed via Wails bindings
 import {
     CompareJSONWithOptions,
@@ -17,6 +20,14 @@ import {
     GetAllFileHistory,
     SaveFilePathToHistory
 } from '../wailsjs/go/main/App';
+
+// ============================================================
+// External Links (open in system browser)
+// ============================================================
+document.querySelector('.bmc-link')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    BrowserOpenURL('https://buymeacoffee.com/areese801');
+});
 
 // ============================================================
 // Tab Navigation
