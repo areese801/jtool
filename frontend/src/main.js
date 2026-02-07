@@ -1,7 +1,7 @@
 import './style.css';
 
 // Import Wails runtime for browser operations
-import { BrowserOpenURL } from '../wailsjs/runtime/runtime';
+import { BrowserOpenURL, EventsOn } from '../wailsjs/runtime/runtime';
 
 // Import Go functions exposed via Wails bindings
 import {
@@ -18,8 +18,52 @@ import {
     CompareLogAnalyses,
     CompareLogFiles,
     GetAllFileHistory,
-    SaveFilePathToHistory
+    SaveFilePathToHistory,
+    ClearFileHistory
 } from '../wailsjs/go/main/App';
+
+// ============================================================
+// Settings Helpers (defined early for use throughout the file)
+// ============================================================
+
+const SETTINGS_KEY = 'jtool-settings';
+
+/**
+ * Load settings from localStorage
+ */
+function loadSettings() {
+    try {
+        const saved = localStorage.getItem(SETTINGS_KEY);
+        if (saved) {
+            return JSON.parse(saved);
+        }
+    } catch (err) {
+        console.error('Error loading settings:', err);
+    }
+    // Default settings
+    return {
+        enablePathHistory: true
+    };
+}
+
+/**
+ * Save settings to localStorage
+ */
+function saveSettings(settings) {
+    try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    } catch (err) {
+        console.error('Error saving settings:', err);
+    }
+}
+
+/**
+ * Check if path history is enabled
+ */
+function isPathHistoryEnabled() {
+    const settings = loadSettings();
+    return settings.enablePathHistory;
+}
 
 // ============================================================
 // External Links (open in system browser)
@@ -90,6 +134,9 @@ function updateDatalist(datalistId, paths) {
  */
 async function saveToHistory(key, path) {
     if (!path) return;
+
+    // Check if path history is enabled
+    if (!isPathHistoryEnabled()) return;
 
     try {
         await SaveFilePathToHistory(key, path);
@@ -1794,9 +1841,65 @@ async function copyJqCommandForComparison(path, side) {
 }
 
 // ============================================================
+// Settings Tab
+// ============================================================
+
+const optEnablePathHistory = document.getElementById('opt-enable-path-history');
+const clearPathHistoryBtn = document.getElementById('clear-path-history-btn');
+
+// Initialize settings UI
+const settings = loadSettings();
+if (optEnablePathHistory) {
+    optEnablePathHistory.checked = settings.enablePathHistory;
+
+    optEnablePathHistory.addEventListener('change', () => {
+        const currentSettings = loadSettings();
+        currentSettings.enablePathHistory = optEnablePathHistory.checked;
+        saveSettings(currentSettings);
+    });
+}
+
+// Clear path history button
+if (clearPathHistoryBtn) {
+    clearPathHistoryBtn.addEventListener('click', async () => {
+        try {
+            await ClearFileHistory();
+            // Clear all file path inputs
+            document.querySelectorAll('.file-path-input').forEach(input => {
+                input.value = '';
+            });
+            alert('File path history cleared.');
+        } catch (err) {
+            console.error('Error clearing history:', err);
+            alert('Failed to clear history: ' + err.message);
+        }
+    });
+}
+
+// Buy Me a Coffee link in settings (open in system browser)
+document.getElementById('bmc-settings-link')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    BrowserOpenURL('https://buymeacoffee.com/areese801');
+});
+
+// Bug report link in settings (open in system browser)
+document.getElementById('bug-report-link')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    BrowserOpenURL('https://github.com/areese801/jtool/issues/new?labels=bug');
+});
+
+// ============================================================
 // Initialization
 // ============================================================
 
 // Load file path history when the app starts
 // This file is loaded as a module, so DOM is already ready
 loadFilePathHistory();
+
+// Listen for tab switch events from the Go backend (e.g., from menu bar)
+EventsOn('switchTab', (tabId) => {
+    const tabBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+    if (tabBtn) {
+        tabBtn.click();
+    }
+});

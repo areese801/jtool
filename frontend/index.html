@@ -10,9 +10,10 @@
     <div id="app">
         <header>
             <nav class="tab-nav">
-                <button class="tab-btn active" data-tab="diff">Diff</button>
-                <button class="tab-btn" data-tab="paths">Path Explorer</button>
-                <button class="tab-btn" data-tab="logs">Log Analyzer</button>
+                <button class="tab-btn active" data-tab="diff" title="Compare two JSON objects and view their differences">Diff</button>
+                <button class="tab-btn" data-tab="paths" title="Extract and explore all JSON paths from a document">Path Explorer</button>
+                <button class="tab-btn" data-tab="logs" title="Analyze JSON paths in log files and compare path frequencies">Log Analyzer</button>
+                <button class="tab-btn" data-tab="settings" title="Configure app settings and preferences">Settings</button>
             </nav>
             <a href="https://buymeacoffee.com/areese801" target="_blank" class="bmc-link" title="Buy me a coffee">
                 <svg viewBox="0 0 24 24" fill="currentColor" class="bmc-icon">
@@ -268,6 +269,54 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 4: Settings -->
+            <div id="tab-settings" class="tab-content">
+                <div class="settings-container">
+                    <h2 class="settings-title">Settings</h2>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">File Path History</h3>
+                        <div class="settings-option">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="opt-enable-path-history" checked>
+                                Enable file path history
+                            </label>
+                            <p class="settings-description">Remember recently used file paths for quick access</p>
+                        </div>
+                        <div class="settings-option">
+                            <button class="btn-secondary" id="clear-path-history-btn">Clear Path History</button>
+                            <p class="settings-description">Remove all saved file paths from history</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">Feedback</h3>
+                        <div class="settings-option">
+                            <a href="#" class="bug-report-link" id="bug-report-link">
+                                <svg viewBox="0 0 24 24" fill="currentColor" class="bug-report-icon">
+                                    <path d="M20 8h-2.81a5.985 5.985 0 0 0-1.82-1.96L17 4.41 15.59 3l-2.17 2.17C12.96 5.06 12.49 5 12 5c-.49 0-.96.06-1.41.17L8.41 3 7 4.41l1.62 1.63C7.88 6.55 7.26 7.22 6.81 8H4v2h2.09c-.05.33-.09.66-.09 1v1H4v2h2v1c0 .34.04.67.09 1H4v2h2.81c1.04 1.79 2.97 3 5.19 3s4.15-1.21 5.19-3H20v-2h-2.09c.05-.33.09-.66.09-1v-1h2v-2h-2v-1c0-.34-.04-.67-.09-1H20V8zm-6 8h-4v-2h4v2zm0-4h-4v-2h4v2z"/>
+                                </svg>
+                                Report a Bug
+                            </a>
+                            <p class="settings-description">Found an issue? Let me know on GitHub</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">Support</h3>
+                        <div class="settings-option">
+                            <a href="https://buymeacoffee.com/areese801" target="_blank" class="bmc-settings-link" id="bmc-settings-link">
+                                <svg viewBox="0 0 24 24" fill="currentColor" class="bmc-settings-icon">
+                                    <path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z"/>
+                                </svg>
+                                Buy me a coffee
+                            </a>
+                            <p class="settings-description">If you find this tool useful, consider supporting its development</p>
                         </div>
                     </div>
                 </div>
