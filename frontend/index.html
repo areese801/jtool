@@ -40,7 +40,7 @@
                             Null = Absent
                         </label>
                     </div>
-                    <div class="view-mode-toggle">
+                    <div class="view-mode-toggle" id="diff-view-toggle">
                         <button class="mode-btn active" data-view="structured">Structured</button>
                         <button class="mode-btn" data-view="sidebyside">Side-by-Side</button>
                     </div>
@@ -174,6 +174,10 @@
                                 Show top values
                             </label>
                         </div>
+                        <div class="view-mode-toggle" id="compare-view-toggle">
+                            <button class="mode-btn active" data-view="structured">Structured</button>
+                            <button class="mode-btn" data-view="sidebyside">Side-by-Side</button>
+                        </div>
                         <button class="btn-primary" id="compare-analyses-btn" disabled>Compare</button>
                     </div>
 
@@ -210,7 +214,8 @@
                             <span>Comparison Results</span>
                             <div class="stats" id="comparison-stats"></div>
                         </div>
-                        <div class="results">
+                        <!-- Structured View (default) -->
+                        <div class="results" id="comparison-structured-view">
                             <table class="compare-table" id="comparison-table">
                                 <thead>
                                     <tr>
@@ -227,6 +232,43 @@
                                 <tbody id="comparison-tbody">
                                 </tbody>
                             </table>
+                        </div>
+                        <!-- Side-by-Side View -->
+                        <div class="results comparison-sidebyside-view" id="comparison-sidebyside-view" style="display: none;">
+                            <div class="sidebyside-container">
+                                <div class="sidebyside-panel">
+                                    <div class="sidebyside-header">Left (Baseline)</div>
+                                    <div class="sidebyside-content">
+                                        <table class="path-table" id="sidebyside-left-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Path</th>
+                                                    <th>Count</th>
+                                                    <th>Objects</th>
+                                                    <th>Distinct</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="sidebyside-left-tbody"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="sidebyside-panel">
+                                    <div class="sidebyside-header">Right (Comparison)</div>
+                                    <div class="sidebyside-content">
+                                        <table class="path-table" id="sidebyside-right-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Path</th>
+                                                    <th>Count</th>
+                                                    <th>Objects</th>
+                                                    <th>Distinct</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="sidebyside-right-tbody"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

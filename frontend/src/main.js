@@ -156,7 +156,7 @@ const optTrimStrings = document.getElementById('opt-trim-strings');
 const optNullEqualsAbsent = document.getElementById('opt-null-equals-absent');
 
 // View mode toggle
-const viewModeBtns = document.querySelectorAll('.view-mode-toggle .mode-btn');
+const viewModeBtns = document.querySelectorAll('#diff-view-toggle .mode-btn');
 let currentViewMode = 'structured';
 let lastDiffResult = null; // Store the last diff result for view switching
 
@@ -1179,7 +1179,7 @@ function showCopyFeedback(message) {
 // ============================================================
 // Log Analyzer Compare Mode - DOM Elements
 // ============================================================
-const modeBtns = document.querySelectorAll('.mode-btn');
+const logModeBtns = document.querySelectorAll('.log-mode-toggle .mode-btn');
 const singleMode = document.getElementById('log-single-mode');
 const compareMode = document.getElementById('log-compare-mode');
 const compareLeftLoadBtn = document.getElementById('compare-left-load');
@@ -1195,21 +1195,29 @@ const comparisonTbody = document.getElementById('comparison-tbody');
 const optShowOnlyChanges = document.getElementById('opt-show-only-changes');
 const optShowTopValues = document.getElementById('opt-show-top-values');
 
+// View mode toggle elements
+const compareViewToggleBtns = document.querySelectorAll('#compare-view-toggle .mode-btn');
+const comparisonStructuredView = document.getElementById('comparison-structured-view');
+const comparisonSideBySideView = document.getElementById('comparison-sidebyside-view');
+const sidebysideLeftTbody = document.getElementById('sidebyside-left-tbody');
+const sidebysideRightTbody = document.getElementById('sidebyside-right-tbody');
+
 // Store analysis results for comparison
 let leftAnalysisResult = null;
 let rightAnalysisResult = null;
+let currentCompareViewMode = 'structured';
 
 // ============================================================
 // Log Analyzer Compare Mode - Event Listeners
 // ============================================================
 
-// Mode toggle
-modeBtns.forEach(btn => {
+// Log analyzer mode toggle (Single Analysis / Compare Files)
+logModeBtns.forEach(btn => {
     btn.addEventListener('click', () => {
         const mode = btn.dataset.mode;
 
-        // Update button states
-        modeBtns.forEach(b => b.classList.remove('active'));
+        // Update button states (only within this toggle group)
+        logModeBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
 
         // Show appropriate mode
@@ -1245,6 +1253,34 @@ compareAnalysesBtn.addEventListener('click', handleCompareAnalyses);
 // Filter options - re-render when changed
 optShowOnlyChanges.addEventListener('change', renderComparison);
 optShowTopValues.addEventListener('change', renderComparison);
+
+// View mode toggle for comparison
+compareViewToggleBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const viewMode = btn.dataset.view;
+
+        // Update button states
+        compareViewToggleBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Update current view mode
+        currentCompareViewMode = viewMode;
+
+        // Toggle view containers
+        if (viewMode === 'structured') {
+            comparisonStructuredView.style.display = 'block';
+            comparisonSideBySideView.style.display = 'none';
+        } else {
+            comparisonStructuredView.style.display = 'none';
+            comparisonSideBySideView.style.display = 'block';
+        }
+
+        // Re-render if we have comparison data
+        if (currentComparison) {
+            renderComparison();
+        }
+    });
+});
 
 // ============================================================
 // Log Analyzer Compare Mode - Core Functions
@@ -1428,7 +1464,7 @@ function displayComparisonStats(stats) {
 }
 
 /**
- * Render the comparison table based on current filters
+ * Render the comparison based on current view mode and filters
  */
 function renderComparison() {
     if (!currentComparison) return;
@@ -1442,6 +1478,15 @@ function renderComparison() {
         comparisons = comparisons.filter(c => c.status !== 'equal');
     }
 
+    // Render both views (only one is visible at a time)
+    renderStructuredComparison(comparisons, showTopValues);
+    renderSideBySideComparison(comparisons, showTopValues);
+}
+
+/**
+ * Render the structured (merged table) comparison view
+ */
+function renderStructuredComparison(comparisons, showTopValues) {
     // Clear table
     comparisonTbody.innerHTML = '';
 
@@ -1547,10 +1592,122 @@ function renderComparison() {
     // Show message if no results
     if (comparisons.length === 0) {
         const tr = document.createElement('tr');
+        const showOnlyChanges = optShowOnlyChanges.checked;
         tr.innerHTML = `<td colspan="8" style="text-align: center; color: var(--text-secondary); padding: 24px;">
             ${showOnlyChanges ? 'No changes found (all paths are equal)' : 'No comparisons to display'}
         </td>`;
         comparisonTbody.appendChild(tr);
+    }
+}
+
+/**
+ * Render the side-by-side comparison view
+ */
+function renderSideBySideComparison(comparisons, showTopValues) {
+    // Clear both tables
+    sidebysideLeftTbody.innerHTML = '';
+    sidebysideRightTbody.innerHTML = '';
+
+    // Build left table (paths from left analysis only)
+    const leftPaths = comparisons.filter(c => c.left);
+    for (const comp of leftPaths) {
+        const tr = document.createElement('tr');
+
+        // Add row class based on status
+        if (comp.status === 'removed') {
+            tr.classList.add('row-removed');
+        } else if (comp.status === 'changed') {
+            tr.classList.add('row-changed');
+        }
+
+        // Path
+        const pathCell = document.createElement('td');
+        pathCell.className = 'path-cell clickable-path';
+        pathCell.textContent = comp.path;
+        pathCell.title = 'Click to copy jq command';
+        pathCell.addEventListener('click', (e) => {
+            e.stopPropagation();
+            copyJqCommandForComparison(comp.path, 'left');
+        });
+        tr.appendChild(pathCell);
+
+        // Count
+        const countCell = document.createElement('td');
+        countCell.className = 'count-cell';
+        countCell.textContent = comp.left.count.toLocaleString();
+        tr.appendChild(countCell);
+
+        // Objects
+        const objectsCell = document.createElement('td');
+        objectsCell.className = 'count-cell';
+        objectsCell.textContent = comp.left.objectHits.toLocaleString();
+        tr.appendChild(objectsCell);
+
+        // Distinct
+        const distinctCell = document.createElement('td');
+        distinctCell.className = 'count-cell';
+        distinctCell.textContent = comp.left.distinctCount.toLocaleString();
+        tr.appendChild(distinctCell);
+
+        sidebysideLeftTbody.appendChild(tr);
+    }
+
+    // Build right table (paths from right analysis only)
+    const rightPaths = comparisons.filter(c => c.right);
+    for (const comp of rightPaths) {
+        const tr = document.createElement('tr');
+
+        // Add row class based on status
+        if (comp.status === 'added') {
+            tr.classList.add('row-added');
+        } else if (comp.status === 'changed') {
+            tr.classList.add('row-changed');
+        }
+
+        // Path
+        const pathCell = document.createElement('td');
+        pathCell.className = 'path-cell clickable-path';
+        pathCell.textContent = comp.path;
+        pathCell.title = 'Click to copy jq command';
+        pathCell.addEventListener('click', (e) => {
+            e.stopPropagation();
+            copyJqCommandForComparison(comp.path, 'right');
+        });
+        tr.appendChild(pathCell);
+
+        // Count
+        const countCell = document.createElement('td');
+        countCell.className = 'count-cell';
+        countCell.textContent = comp.right.count.toLocaleString();
+        tr.appendChild(countCell);
+
+        // Objects
+        const objectsCell = document.createElement('td');
+        objectsCell.className = 'count-cell';
+        objectsCell.textContent = comp.right.objectHits.toLocaleString();
+        tr.appendChild(objectsCell);
+
+        // Distinct
+        const distinctCell = document.createElement('td');
+        distinctCell.className = 'count-cell';
+        distinctCell.textContent = comp.right.distinctCount.toLocaleString();
+        tr.appendChild(distinctCell);
+
+        sidebysideRightTbody.appendChild(tr);
+    }
+
+    // Show message if no results in left
+    if (leftPaths.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 24px;">No paths in left file</td>`;
+        sidebysideLeftTbody.appendChild(tr);
+    }
+
+    // Show message if no results in right
+    if (rightPaths.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 24px;">No paths in right file</td>`;
+        sidebysideRightTbody.appendChild(tr);
     }
 }
 
