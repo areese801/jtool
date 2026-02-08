@@ -54,11 +54,6 @@ func main() {
 // createAppMenu builds the native application menu bar.
 // This works cross-platform: on macOS it appears in the system menu bar,
 // on Windows/Linux it appears in the application window.
-//
-// Python comparison:
-//   - macOS menus in Python would use PyObjC or a framework like rumps
-//   - Wails provides a cross-platform menu API that maps to native menus
-//   - The menu.Menu type is like a tree structure of menu items
 func createAppMenu(app *App) *menu.Menu {
 	appMenu := menu.NewMenu()
 

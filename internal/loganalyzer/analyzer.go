@@ -3,16 +3,6 @@
 //
 // This is useful for analyzing Singer tap output, JSONL files, or any
 // log file with embedded JSON objects.
-//
-// Python comparison:
-//
-//	for line in open(file):
-//	    try:
-//	        obj = json.loads(line)
-//	        paths = get_json_paths(obj)
-//	        aggregate(paths)
-//	    except json.JSONDecodeError:
-//	        pass  # Skip non-JSON lines
 package loganalyzer
 
 import (
@@ -50,23 +40,6 @@ type AnalysisResult struct {
 }
 
 // AnalyzeFile reads a file and aggregates JSON path statistics.
-//
-// Python equivalent:
-//
-//	def analyze_file(path):
-//	    paths = defaultdict(lambda: {"count": 0, "objects": 0})
-//	    json_lines = 0
-//	    for line in open(path):
-//	        try:
-//	            obj = json.loads(line.strip())
-//	            json_lines += 1
-//	            line_paths = extract_paths(obj)
-//	            for p, count in line_paths.items():
-//	                paths[p]["count"] += count
-//	                paths[p]["objects"] += 1
-//	        except:
-//	            pass
-//	    return paths, json_lines
 func AnalyzeFile(filePath string) (*AnalysisResult, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -334,18 +307,6 @@ func extractPaths(prefix string, value any, counts map[string]int) {
 
 // extractPathsWithValues extracts paths and their values for distinct counting.
 // Values are converted to strings for comparison.
-//
-// Python comparison:
-//
-//	def extract_with_values(prefix, value, result):
-//	    if isinstance(value, dict):
-//	        for k, v in value.items():
-//	            extract_with_values(f"{prefix}.{k}", v, result)
-//	    elif isinstance(value, list):
-//	        for item in value:
-//	            extract_with_values(f"{prefix}[]", item, result)
-//	    else:
-//	        result[prefix].append(str(value))
 func extractPathsWithValues(prefix string, value any, pathValues map[string][]string) {
 	switch v := value.(type) {
 	case map[string]any:

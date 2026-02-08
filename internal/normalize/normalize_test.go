@@ -7,12 +7,6 @@ import (
 )
 
 // TestNormalizeValue tests the main Value normalization function.
-//
-// Python comparison:
-//
-//	@pytest.mark.parametrize("input,options,expected", [...])
-//	def test_normalize_value(input, options, expected):
-//	    assert normalize(input, options) == expected
 func TestNormalizeValue(t *testing.T) {
 	tests := []struct {
 		name     string

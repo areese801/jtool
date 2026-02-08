@@ -17,11 +17,6 @@ import (
 )
 
 // App struct holds the application state.
-//
-// Python comparison:
-//   - Like a Python class with __init__ storing instance variables
-//   - ctx is like storing request context in Flask/Django
-//   - Go structs only hold data; methods are defined separately
 type App struct {
 	ctx       context.Context
 	history   *storage.FileHistory
@@ -29,35 +24,17 @@ type App struct {
 }
 
 // NewApp creates a new App application struct.
-// This is Go's equivalent of a constructor/factory function.
-//
-// Python comparison:
-//
-//	def __init__(self):
-//	    pass  # No initialization needed yet
-//
-// In Go, we return a pointer (*App) so the caller gets a reference
-// to the same object, not a copy.
 func NewApp() *App {
 	return &App{}
 }
 
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods.
-//
 // This is a Wails lifecycle hook - called automatically when app starts.
-//
-// Python comparison:
-//
-//	def startup(self):
-//	    self.ctx = ctx
-//	    config_dir = os.path.join(os.path.expanduser("~"), ".jtool")
-//	    self.history = load_history(config_dir)
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 
 	// Get user config directory
-	// Python: os.path.join(os.path.expanduser("~"), ".jtool")
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		// Fallback to current directory if we can't get home dir
@@ -66,7 +43,6 @@ func (a *App) startup(ctx context.Context) {
 	a.configDir = filepath.Join(homeDir, ".jtool")
 
 	// Load file path history from disk
-	// Python: history = load_history(config_dir)
 	history, err := storage.Load(a.configDir)
 	if err != nil {
 		// If we can't load history, start with an empty one
@@ -80,7 +56,6 @@ func (a *App) startup(ctx context.Context) {
 // Save the file history to disk.
 func (a *App) shutdown(ctx context.Context) {
 	// Save history to disk
-	// Python: history.save(config_dir)
 	if a.history != nil {
 		_ = a.history.Save(a.configDir)
 	}
@@ -88,21 +63,6 @@ func (a *App) shutdown(ctx context.Context) {
 
 // CompareJSON takes two JSON strings, parses them, and returns the diff result.
 // This method is exposed to the frontend via Wails bindings.
-//
-// Python comparison:
-//
-//	def compare_json(self, left_json: str, right_json: str) -> DiffResult:
-//	    try:
-//	        left = json.loads(left_json)
-//	        right = json.loads(right_json)
-//	        return diff.compare(left, right)
-//	    except json.JSONDecodeError as e:
-//	        raise ValueError(f"Invalid JSON: {e}")
-//
-// Key Go differences:
-//   - Returns (result, error) instead of raising exceptions
-//   - Must explicitly check and handle errors
-//   - The `any` type receives the parsed JSON (like Python's dynamic typing)
 func (a *App) CompareJSON(leftJSON, rightJSON string) (*diff.DiffResult, error) {
 	// Parse left JSON
 	var left any
@@ -123,11 +83,6 @@ func (a *App) CompareJSON(leftJSON, rightJSON string) (*diff.DiffResult, error) 
 
 // FormatJSON takes a JSON string and returns it pretty-printed.
 // Useful for normalizing user input in the UI.
-//
-// Python comparison:
-//
-//	def format_json(self, json_str: str) -> str:
-//	    return json.dumps(json.loads(json_str), indent=2)
 func (a *App) FormatJSON(jsonStr string) (string, error) {
 	var data any
 	if err := json.Unmarshal([]byte(jsonStr), &data); err != nil {
@@ -135,7 +90,6 @@ func (a *App) FormatJSON(jsonStr string) (string, error) {
 	}
 
 	// MarshalIndent pretty-prints with indentation
-	// Like json.dumps(data, indent=2) in Python
 	formatted, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return "", fmt.Errorf("error formatting JSON: %w", err)
@@ -146,15 +100,6 @@ func (a *App) FormatJSON(jsonStr string) (string, error) {
 
 // ValidateJSON checks if a string is valid JSON.
 // Returns an error message if invalid, empty string if valid.
-//
-// Python comparison:
-//
-//	def validate_json(self, json_str: str) -> str:
-//	    try:
-//	        json.loads(json_str)
-//	        return ""
-//	    except json.JSONDecodeError as e:
-//	        return str(e)
 func (a *App) ValidateJSON(jsonStr string) string {
 	var data any
 	if err := json.Unmarshal([]byte(jsonStr), &data); err != nil {
@@ -165,10 +110,6 @@ func (a *App) ValidateJSON(jsonStr string) string {
 
 // NormalizeOptions mirrors the normalize.Options struct for frontend use.
 // Wails automatically converts between Go structs and JavaScript objects.
-//
-// Python comparison:
-//   - Like a TypedDict or Pydantic model for API serialization
-//   - Wails handles the JSON serialization automatically
 type NormalizeOptions struct {
 	SortKeys         bool   `json:"sortKeys"`
 	NormalizeNumbers bool   `json:"normalizeNumbers"`
@@ -180,15 +121,6 @@ type NormalizeOptions struct {
 
 // CompareJSONWithOptions compares two JSON strings with normalization options.
 // This is the "smart" comparison that handles key ordering, number formats, etc.
-//
-// Python comparison:
-//
-//	def compare_json_with_options(self, left: str, right: str, opts: dict) -> DiffResult:
-//	    left_data = json.loads(left)
-//	    right_data = json.loads(right)
-//	    normalized_left = normalize(left_data, opts)
-//	    normalized_right = normalize(right_data, opts)
-//	    return diff.compare(normalized_left, normalized_right)
 func (a *App) CompareJSONWithOptions(leftJSON, rightJSON string, opts NormalizeOptions) (*diff.DiffResult, error) {
 	// Parse left JSON
 	var left any
@@ -233,22 +165,6 @@ func (a *App) GetDefaultNormalizeOptions() NormalizeOptions {
 
 // OpenJSONFile opens a file dialog for selecting a JSON file and returns its contents.
 // Uses Wails' runtime.OpenFileDialog which is sandbox-compatible for Mac App Store.
-//
-// Python comparison:
-//
-//	def open_json_file(self) -> str:
-//	    # In Python with tkinter:
-//	    from tkinter import filedialog
-//	    path = filedialog.askopenfilename(filetypes=[("JSON", "*.json")])
-//	    if not path:
-//	        return ""
-//	    with open(path) as f:
-//	        return f.read()
-//
-// Key differences:
-//   - Wails handles the native file dialog (uses macOS Cocoa dialogs)
-//   - The dialog is sandboxed - user must explicitly select the file
-//   - Returns empty string if user cancels (no error)
 func (a *App) OpenJSONFile() (string, error) {
 	// Open file dialog with JSON filter
 	// runtime.OpenFileDialog uses the app context we stored in startup()
@@ -276,8 +192,6 @@ func (a *App) OpenJSONFile() (string, error) {
 	}
 
 	// Read file contents
-	// os.ReadFile is Go 1.16+ - reads entire file into memory
-	// Python equivalent: open(path).read()
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return "", fmt.Errorf("error reading file: %w", err)
@@ -289,20 +203,6 @@ func (a *App) OpenJSONFile() (string, error) {
 // GetJSONPaths extracts all JSON paths from a JSON string.
 // Returns all paths to leaf values with occurrence counts.
 // Useful for understanding the structure/schema of a JSON document.
-//
-// Python comparison (from get_json_paths.py):
-//
-//	def get_json_paths(input_file):
-//	    j = json.loads(json_data)
-//	    paths = defaultdict(int)
-//	    for k in j.keys():
-//	        unpack(pre_path="$.", test_obj=j[k], result_set=paths)
-//	    return OrderedDict(sorted(paths.items()))
-//
-// Key Go differences:
-//   - Type switch instead of isinstance() checks
-//   - Explicit sorting (Go maps are unordered)
-//   - Returns structured result instead of printing
 func (a *App) GetJSONPaths(jsonStr string) (*paths.PathResult, error) {
 	// Parse JSON
 	var data any
@@ -336,20 +236,6 @@ func (a *App) GetJSONPathsWithContainers(jsonStr string, includeContainers bool)
 //
 // This is useful for analyzing Singer tap output, JSONL files, or any log
 // file with embedded JSON objects.
-//
-// Python comparison:
-//
-//	def analyze_log_file():
-//	    path = filedialog.askopenfilename()
-//	    paths = defaultdict(lambda: {"count": 0, "objects": 0})
-//	    for line in open(path):
-//	        try:
-//	            obj = json.loads(line)
-//	            for p in get_paths(obj):
-//	                paths[p]["count"] += 1
-//	        except json.JSONDecodeError:
-//	            pass  # Skip non-JSON lines
-//	    return paths
 func (a *App) AnalyzeLogFile() (*loganalyzer.AnalysisResult, error) {
 	// Open file dialog
 	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
@@ -518,29 +404,12 @@ type FileResult struct {
 
 // CompareLogAnalyses compares two log analysis results and returns a structured comparison.
 // This is the core comparison method used by other comparison functions.
-//
-// Python comparison:
-//
-//	def compare_log_analyses(left: AnalysisResult, right: AnalysisResult,
-//	                         left_file: str, right_file: str) -> ComparisonResult:
-//	    return loganalyzer.compare(left, right, left_file, right_file)
-//
-// Key Go differences:
-//   - Pointers (*AnalysisResult) allow nil checking and avoid copying large structs
-//   - Returns nil instead of raising exceptions for invalid inputs
 func (a *App) CompareLogAnalyses(left, right *loganalyzer.AnalysisResult, leftFile, rightFile string) *loganalyzer.ComparisonResult {
 	return loganalyzer.CompareAnalyses(left, right, leftFile, rightFile)
 }
 
 // CompareLogFiles analyzes and compares two log files at the given paths.
 // This is a convenience method that combines file analysis and comparison.
-//
-// Python comparison:
-//
-//	def compare_log_files(left_path: str, right_path: str) -> ComparisonResult:
-//	    left_result = analyze_file(left_path)
-//	    right_result = analyze_file(right_path)
-//	    return compare(left_result, right_result, left_path, right_path)
 func (a *App) CompareLogFiles(leftPath, rightPath string) (*loganalyzer.ComparisonResult, error) {
 	// Validate inputs
 	if leftPath == "" || rightPath == "" {
@@ -566,22 +435,6 @@ func (a *App) CompareLogFiles(leftPath, rightPath string) (*loganalyzer.Comparis
 
 // SelectAndCompareLogFiles opens two file dialogs (left/baseline and right/comparison)
 // and returns the comparison result. This is the main entry point for the compare mode UI.
-//
-// Python comparison:
-//
-//	def select_and_compare_log_files():
-//	    left_path = filedialog.askopenfilename(title="Select Baseline File")
-//	    if not left_path:
-//	        return None
-//	    right_path = filedialog.askopenfilename(title="Select Comparison File")
-//	    if not right_path:
-//	        return None
-//	    return compare_log_files(left_path, right_path)
-//
-// Key Go differences:
-//   - Uses Wails runtime.OpenFileDialog for sandbox-compatible file access
-//   - Returns nil (not an error) if user cancels dialog
-//   - Error handling is explicit at each step
 func (a *App) SelectAndCompareLogFiles() (*loganalyzer.ComparisonResult, error) {
 	// Open first dialog for left/baseline file
 	leftPath, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
@@ -641,11 +494,6 @@ func (a *App) SelectAndCompareLogFiles() (*loganalyzer.ComparisonResult, error) 
 
 // GetFileHistory returns the file path history for a specific key.
 // Keys are: "diff-left", "diff-right", "paths", "logs", "compare-left", "compare-right"
-//
-// Python comparison:
-//
-//	def get_file_history(self, key: str) -> list[str]:
-//	    return self.history.get(key, [])
 func (a *App) GetFileHistory(key string) []string {
 	if a.history == nil {
 		return []string{}
@@ -655,12 +503,6 @@ func (a *App) GetFileHistory(key string) []string {
 
 // GetMostRecentFilePath returns the most recent file path for a specific key.
 // Returns empty string if no history exists.
-//
-// Python comparison:
-//
-//	def get_most_recent_file_path(self, key: str) -> str:
-//	    paths = self.history.get(key, [])
-//	    return paths[0] if paths else ""
 func (a *App) GetMostRecentFilePath(key string) string {
 	if a.history == nil {
 		return ""
@@ -670,12 +512,6 @@ func (a *App) GetMostRecentFilePath(key string) string {
 
 // SaveFilePathToHistory adds a file path to the history for a specific key.
 // This is called automatically when files are loaded, but can also be called manually.
-//
-// Python comparison:
-//
-//	def save_file_path_to_history(self, key: str, path: str):
-//	    self.history.add(key, path)
-//	    self.history.save(self.config_dir)
 func (a *App) SaveFilePathToHistory(key, path string) error {
 	if a.history == nil {
 		return fmt.Errorf("history not initialized")
@@ -684,17 +520,11 @@ func (a *App) SaveFilePathToHistory(key, path string) error {
 	a.history.Add(key, path)
 
 	// Save to disk immediately
-	// Python: self.history.save(self.config_dir)
 	return a.history.Save(a.configDir)
 }
 
 // GetAllFileHistory returns the entire file history map.
 // This is useful for initializing all dropdowns on app startup.
-//
-// Python comparison:
-//
-//	def get_all_file_history(self) -> dict[str, list[str]]:
-//	    return self.history.paths
 func (a *App) GetAllFileHistory() map[string][]string {
 	if a.history == nil {
 		return map[string][]string{}
@@ -716,4 +546,27 @@ func (a *App) GetAllFileHistory() map[string][]string {
 	}
 
 	return result
+}
+
+// ClearFileHistory clears all file path history and saves the empty state.
+func (a *App) ClearFileHistory() error {
+	if a.history == nil {
+		return nil
+	}
+
+	a.history.Clear()
+
+	// Save the empty history
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	appConfigDir := filepath.Join(configDir, "jtool")
+	return a.history.Save(appConfigDir)
+}
+
+// ShowSettingsTab emits an event to the frontend to switch to the Settings tab.
+// This is called from the Help menu in the application menu bar (works on all platforms).
+func (a *App) ShowSettingsTab() {
+	runtime.EventsEmit(a.ctx, "switchTab", "settings")
 }

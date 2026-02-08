@@ -2,25 +2,9 @@
 //
 // Normalization transforms JSON values so that semantically equivalent
 // values become structurally identical, making diff results more meaningful.
-//
-// Python comparison:
-//   - Similar to writing a custom JSON encoder with sort_keys=True
-//   - In Python: json.dumps(data, sort_keys=True)
-//   - Go doesn't have this built-in, so we implement it ourselves
 package normalize
 
 // Options controls how JSON normalization is performed.
-//
-// Python comparison:
-//
-//	@dataclass
-//	class NormalizeOptions:
-//	    sort_keys: bool = True
-//	    normalize_numbers: bool = True
-//	    trim_strings: bool = False
-//
-// In Go, we use a struct with exported fields (capitalized = public).
-// Default values are set via a constructor function, not in the struct definition.
 type Options struct {
 	// SortKeys sorts object keys alphabetically.
 	// When true: {"b":1, "a":2} is normalized to {"a":2, "b":1}
@@ -56,18 +40,6 @@ type Options struct {
 }
 
 // DefaultOptions returns sensible defaults for normalization.
-//
-// Python comparison:
-//
-//	def default_options() -> NormalizeOptions:
-//	    return NormalizeOptions(
-//	        sort_keys=True,
-//	        normalize_numbers=True,
-//	        trim_strings=False,
-//	    )
-//
-// In Go, we use a function instead of class defaults because
-// struct fields default to zero values (false, 0, "", nil).
 func DefaultOptions() Options {
 	return Options{
 		SortKeys:         true,  // Almost always wanted

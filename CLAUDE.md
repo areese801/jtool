@@ -10,27 +10,6 @@ This is a **JSON Diff Tool** - a high-performance GUI application for comparing 
 - Frontend: Vanilla JS + CSS (or Svelte if needed)
 - JSON Parsing: `github.com/goccy/go-json` or `github.com/bytedance/sonic`
 
-## Developer Background
-
-**IMPORTANT:** The developer has a Python background but is learning Go through this project.
-
-**Assistant Instructions:**
-- When implementing Go code, provide Python comparisons and contrasts where relevant
-- Explain Go-specific concepts (goroutines, channels, interfaces, pointers, error handling, etc.) in relation to Python equivalents
-- Highlight key differences: static typing, explicit error handling, no classes (structs + methods), memory management
-- Point out Go idioms and best practices that differ from Python conventions
-- When showing Go patterns, explain what the equivalent Python code would look like
-
-### Example Comparisons to Make:
-- **Error Handling:** Go's explicit `if err != nil` vs Python's try/except
-- **Type System:** Go's static types vs Python's dynamic typing
-- **Concurrency:** Goroutines/channels vs Python's threading/asyncio
-- **Package Structure:** Go modules vs Python packages
-- **Memory:** Go pointers and pass-by-value vs Python's reference semantics
-- **Methods:** Go structs + methods vs Python classes
-- **Nil/None:** How Go's nil compares to Python's None
-- **Iteration:** Go's for loops vs Python's for/while/comprehensions
-
 ## Key Features
 
 1. **Key Normalization** - Kaleidoscope-style semantic comparison
@@ -211,8 +190,7 @@ This pattern ensures visual consistency across all tabs (Diff, Path Explorer, Lo
 
 ## Notes for AI Assistant
 
-- Prioritize code clarity and learning over hyper-optimization initially
+- Prioritize code clarity over hyper-optimization initially
 - Explain Go patterns as they're introduced
 - Use this project as a teaching opportunity for Go best practices
-- Reference Python equivalents to help bridge the knowledge gap
 - **Follow the UI/UX Design Patterns above for consistent interface design**

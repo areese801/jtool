@@ -2,11 +2,6 @@
 //
 // This package implements a recursive tree comparison algorithm for JSON data.
 // It produces a structured diff that tracks the JSON path of each difference.
-//
-// Python comparison:
-//   - Similar to the `deepdiff` library in Python
-//   - Go requires explicit type checking (type assertions) whereas Python uses duck typing
-//   - Go's `any` type is like Python's dynamic typing, but you must assert types to use them
 package diff
 
 import (
@@ -21,13 +16,6 @@ import (
 // Both left and right should be the result of json.Unmarshal into `any`.
 //
 // Returns a DiffResult containing the full diff tree and statistics.
-//
-// Python equivalent would be:
-//
-//	def compare(left: Any, right: Any) -> DiffResult:
-//	    root = compare_values(left, right, "$")
-//	    stats = calculate_stats(root)
-//	    return DiffResult(root=root, stats=stats)
 func Compare(left, right any) *DiffResult {
 	root := compareValues(left, right, "")
 	stats := calculateStats(root)
@@ -49,13 +37,6 @@ func Compare(left, right any) *DiffResult {
 // With default options:
 //   - {"b":1, "a":2} equals {"a":2, "b":1} (key order ignored)
 //   - 1.0 equals 1 (number normalization)
-//
-// Python comparison:
-//
-//	def compare_with_options(left, right, options):
-//	    left_normalized = normalize(left, options)
-//	    right_normalized = normalize(right, options)
-//	    return compare(left_normalized, right_normalized)
 func CompareWithOptions(left, right any, opts normalize.Options) *DiffResult {
 	// Normalize both values before comparison
 	leftNorm := normalize.Value(left, opts)
@@ -141,12 +122,7 @@ func compareValues(left, right any, path string) DiffNode {
 	}
 
 	// Same type, compare values directly
-	// Using reflect.DeepEqual for safety (handles edge cases)
-	//
-	// Python comparison:
-	//   - Python's == does deep equality for dicts/lists automatically
-	//   - Go's == only works for comparable types (not slices/maps)
-	//   - reflect.DeepEqual is Go's equivalent to Python's ==
+	// Using reflect.DeepEqual for safety (handles edge cases like slices/maps)
 	if reflect.DeepEqual(left, right) {
 		return DiffNode{
 			Path: path,
@@ -190,8 +166,6 @@ func compareObjects(left, right map[string]any, path string) DiffNode {
 	}
 
 	// Sort keys for deterministic output
-	// In Python: sorted(all_keys)
-	// In Go: we need to convert to slice first, then sort
 	sortedKeys := make([]string, 0, len(allKeys))
 	for k := range allKeys {
 		sortedKeys = append(sortedKeys, k)
@@ -237,13 +211,7 @@ func compareObjects(left, right map[string]any, path string) DiffNode {
 }
 
 // compareArrays compares two JSON arrays element by element.
-//
-// Phase 1: Simple index-by-index comparison (order matters)
-// Phase 2 (future): Could use LCS algorithm to detect moves
-//
-// Python comparison:
-//   - In Python you might use zip_longest to iterate both lists
-//   - In Go we manually track indices
+// Uses simple index-by-index comparison (order matters).
 func compareArrays(left, right []any, path string) DiffNode {
 	node := DiffNode{
 		Path:     path,
@@ -291,18 +259,6 @@ func compareArrays(left, right []any, path string) DiffNode {
 }
 
 // calculateStats walks the diff tree and counts each type of difference.
-//
-// Python equivalent:
-//
-//	def calculate_stats(node: DiffNode) -> DiffStats:
-//	    stats = DiffStats()
-//	    def walk(n):
-//	        if n.type == "added": stats.added += 1
-//	        # ... etc
-//	        for child in n.children:
-//	            walk(child)
-//	    walk(node)
-//	    return stats
 func calculateStats(node DiffNode) DiffStats {
 	stats := DiffStats{}
 	walkAndCount(&stats, node)
@@ -310,12 +266,6 @@ func calculateStats(node DiffNode) DiffStats {
 }
 
 // walkAndCount recursively counts diff types.
-// Note: we pass *DiffStats (pointer) so we modify the original, not a copy.
-//
-// Python comparison:
-//   - Python passes objects by reference automatically
-//   - Go passes by value, so we need a pointer to modify the original
-//   - The & creates a pointer, the * dereferences it
 func walkAndCount(stats *DiffStats, node DiffNode) {
 	// Only count leaf nodes (nodes without children)
 	// This avoids double-counting parent objects/arrays

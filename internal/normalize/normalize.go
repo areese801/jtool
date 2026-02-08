@@ -16,17 +16,6 @@ import (
 //   - string for strings
 //   - bool for booleans
 //   - nil for null
-//
-// Python comparison:
-//
-//	def normalize_value(value: Any, options: NormalizeOptions) -> Any:
-//	    if isinstance(value, dict):
-//	        return normalize_object(value, options)
-//	    elif isinstance(value, list):
-//	        return normalize_array(value, options)
-//	    # ... etc
-//
-// In Go, we use type switches instead of isinstance().
 func Value(v any, opts Options) any {
 	switch val := v.(type) {
 	case map[string]any:
@@ -104,11 +93,6 @@ func normalizeArray(arr []any, opts Options) []any {
 //   - 1.0 → 1 (float64 to int representation)
 //   - 1.5 → 1.5 (unchanged)
 //   - 1.0000001 → 1.0000001 (unchanged, not close enough to integer)
-//
-// Python comparison:
-//   - Python's json module keeps 1.0 as float, 1 as int
-//   - Go's json always uses float64
-//   - This normalizes them to be comparable
 func normalizeNumber(n float64, opts Options) any {
 	if !opts.NormalizeNumbers {
 		return n
@@ -176,11 +160,7 @@ func sortArray(arr []any) {
 
 // compareValues compares two values for sorting purposes.
 // Returns negative if a < b, zero if a == b, positive if a > b.
-//
-// Python comparison:
-//   - Python's sort handles mixed types with type-based ordering
-//   - Go requires explicit comparison logic
-//   - We define an ordering: nil < bool < number < string < array < object
+// Ordering: nil < bool < number < string < array < object
 func compareValues(a, b any) int {
 	// Get type order
 	aOrder := typeOrder(a)

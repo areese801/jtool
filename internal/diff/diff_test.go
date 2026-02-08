@@ -8,23 +8,6 @@ import (
 )
 
 // TestCompare uses table-driven tests, a common Go testing pattern.
-//
-// Python comparison:
-//
-//	# Python with pytest uses parametrize decorators
-//	@pytest.mark.parametrize("left,right,expected_type", [
-//	    ('{"a": 1}', '{"a": 1}', "equal"),
-//	    ('{"a": 1}', '{"a": 2}', "changed"),
-//	])
-//	def test_compare(left, right, expected_type):
-//	    result = compare(json.loads(left), json.loads(right))
-//	    assert result.root.type == expected_type
-//
-// In Go, we use a slice of test cases and iterate over them.
-// This gives us:
-//   - Named test cases (shows in output)
-//   - Easy to add new cases
-//   - Can run individual cases with -run flag
 func TestCompare(t *testing.T) {
 	tests := []struct {
 		name          string
