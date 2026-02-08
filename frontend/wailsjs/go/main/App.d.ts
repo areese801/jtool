@@ -11,6 +11,8 @@ export function AnalyzeLogFilePath(arg1:string):Promise<loganalyzer.AnalysisResu
 
 export function AnalyzeLogString(arg1:string):Promise<loganalyzer.AnalysisResult>;
 
+export function ClearFileHistory():Promise<void>;
+
 export function CompareJSON(arg1:string,arg2:string):Promise<diff.DiffResult>;
 
 export function CompareJSONWithOptions(arg1:string,arg2:string,arg3:main.NormalizeOptions):Promise<diff.DiffResult>;
@@ -44,5 +46,7 @@ export function SaveFilePathToHistory(arg1:string,arg2:string):Promise<void>;
 export function SelectAndAnalyzeLogFile():Promise<main.LogFileResult>;
 
 export function SelectAndCompareLogFiles():Promise<loganalyzer.ComparisonResult>;
+
+export function ShowSettingsTab():Promise<void>;
 
 export function ValidateJSON(arg1:string):Promise<string>;

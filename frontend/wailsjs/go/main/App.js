@@ -14,6 +14,10 @@ export function AnalyzeLogString(arg1) {
   return window['go']['main']['App']['AnalyzeLogString'](arg1);
 }
 
+export function ClearFileHistory() {
+  return window['go']['main']['App']['ClearFileHistory']();
+}
+
 export function CompareJSON(arg1, arg2) {
   return window['go']['main']['App']['CompareJSON'](arg1, arg2);
 }
@@ -80,6 +84,10 @@ export function SelectAndAnalyzeLogFile() {
 
 export function SelectAndCompareLogFiles() {
   return window['go']['main']['App']['SelectAndCompareLogFiles']();
+}
+
+export function ShowSettingsTab() {
+  return window['go']['main']['App']['ShowSettingsTab']();
 }
 
 export function ValidateJSON(arg1) {
