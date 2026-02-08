@@ -63,6 +63,13 @@ jobs:
       - name: Build Wails app
         run: wails build -platform ${{ matrix.platform }}
 
+      # macOS: ad-hoc sign the app bundle
+      - name: Sign macOS app (ad-hoc)
+        if: startsWith(matrix.platform, 'darwin')
+        run: |
+          codesign --force --deep --sign - build/bin/jtool.app
+          codesign --verify --verbose build/bin/jtool.app
+
       # macOS: zip the .app bundle
       - name: Package macOS app
         if: startsWith(matrix.platform, 'darwin')
