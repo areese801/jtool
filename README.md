@@ -54,11 +54,14 @@ Download the latest release for your platform from the [Releases](https://github
 ### macOS
 ```bash
 # Extract and move to Applications
-unzip jtool-darwin-*.zip
+unzip jtool-macos-*.zip
 mv jtool.app /Applications/
+
+# Remove the quarantine flag (required for unsigned apps)
+xattr -cr /Applications/jtool.app
 ```
 
-> **Note:** On first launch, you may need to right-click and select "Open" to bypass Gatekeeper, or go to System Preferences → Security & Privacy to allow the app.
+> **Note:** The app is not signed with an Apple Developer certificate. macOS will show a "damaged" or "unidentified developer" warning when you try to open it. The `xattr -cr` command removes the quarantine flag and allows the app to run.
 
 ### Windows
 Extract the zip and run `jtool.exe`.
