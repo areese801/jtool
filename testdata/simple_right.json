@@ -1,0 +1,12 @@
+{
+  "name": "Bob",
+  "age": 30,
+  "phone": "+1-555-0123",
+  "active": false,
+  "tags": ["developer", "python", "rust"],
+  "address": {
+    "city": "New York",
+    "zip": "10001",
+    "country": "USA"
+  }
+}

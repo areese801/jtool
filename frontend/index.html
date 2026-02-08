@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>JSON Diff</title>
+    <link rel="stylesheet" href="./src/style.css"/>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <nav class="tab-nav">
+                <button class="tab-btn active" data-tab="diff" title="Compare two JSON objects and view their differences">Diff</button>
+                <button class="tab-btn" data-tab="paths" title="Extract and explore all JSON paths from a document">Path Explorer</button>
+                <button class="tab-btn" data-tab="logs" title="Analyze JSON paths in log files and compare path frequencies">Log Analyzer</button>
+                <button class="tab-btn" data-tab="settings" title="Configure app settings and preferences">Settings</button>
+            </nav>
+            <a href="https://buymeacoffee.com/areese801" target="_blank" class="bmc-link" title="Buy me a coffee">
+                <svg viewBox="0 0 24 24" fill="currentColor" class="bmc-icon">
+                    <path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z"/>
+                </svg>
+            </a>
+            <img src="./src/assets/images/appicon.png" alt="jtool" class="app-icon">
+        </header>
+
+        <main>
+            <!-- Tab 1: JSON Diff -->
+            <div id="tab-diff" class="tab-content active">
+                <div class="controls controls-horizontal">
+                    <div class="options-panel">
+                        <span class="options-label">Normalization:</span>
+                        <label class="checkbox-label" title="Treat {b:1, a:2} as equal to {a:2, b:1}">
+                            <input type="checkbox" id="opt-sort-keys" checked>
+                            Sort Keys
+                        </label>
+                        <label class="checkbox-label" title="Treat 1.0 as equal to 1">
+                            <input type="checkbox" id="opt-normalize-numbers" checked>
+                            Numbers
+                        </label>
+                        <label class="checkbox-label" title="Trim leading/trailing whitespace from strings">
+                            <input type="checkbox" id="opt-trim-strings">
+                            Trim Strings
+                        </label>
+                        <label class="checkbox-label" title="Treat null values as equivalent to missing keys">
+                            <input type="checkbox" id="opt-null-equals-absent">
+                            Null = Absent
+                        </label>
+                    </div>
+                    <div class="view-mode-toggle" id="diff-view-toggle">
+                        <button class="mode-btn active" data-view="structured">Structured</button>
+                        <button class="mode-btn" data-view="sidebyside">Side-by-Side</button>
+                    </div>
+                    <button class="btn-primary" id="compare-btn">Compare</button>
+                </div>
+
+                <div class="editor-container">
+                    <div class="editor-panel">
+                        <div class="panel-header">
+                            <span>Left (Original)</span>
+                            <input type="text" id="left-file-path" class="file-path-input" placeholder="Paste file path...">
+                            <div class="panel-buttons">
+                                <button class="btn-small" id="load-left">Load File</button>
+                                <button class="btn-small" id="reload-left" title="Reload file from disk">Reload</button>
+                                <button class="btn-small" id="format-left">Format</button>
+                            </div>
+                        </div>
+                        <textarea id="left-json" placeholder="Paste JSON here or click 'Load File'..."></textarea>
+                        <div class="error-message" id="left-error"></div>
+                    </div>
+
+                    <div class="editor-panel">
+                        <div class="panel-header">
+                            <span>Right (Modified)</span>
+                            <input type="text" id="right-file-path" class="file-path-input" placeholder="Paste file path...">
+                            <div class="panel-buttons">
+                                <button class="btn-small" id="load-right">Load File</button>
+                                <button class="btn-small" id="reload-right" title="Reload file from disk">Reload</button>
+                                <button class="btn-small" id="format-right">Format</button>
+                            </div>
+                        </div>
+                        <textarea id="right-json" placeholder="Paste JSON here or click 'Load File'..."></textarea>
+                        <div class="error-message" id="right-error"></div>
+                    </div>
+                </div>
+
+                <div class="results-container" id="results-container">
+                    <div class="results-header">
+                        <span>Diff Results</span>
+                        <div class="stats" id="stats"></div>
+                    </div>
+                    <div class="results" id="results">
+                        <p class="placeholder">Click "Compare" to see differences</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Path Explorer -->
+            <div id="tab-paths" class="tab-content">
+                <div class="controls controls-horizontal">
+                    <div class="options-panel">
+                        <label class="checkbox-label" title="Include paths to objects and arrays, not just leaf values">
+                            <input type="checkbox" id="opt-include-containers">
+                            Show container paths
+                        </label>
+                    </div>
+                    <button class="btn-primary" id="extract-btn">Extract Paths</button>
+                </div>
+
+                <div class="editor-container single-panel">
+                    <div class="editor-panel">
+                        <div class="panel-header">
+                            <span>JSON Input</span>
+                            <input type="text" id="paths-file-path" class="file-path-input" placeholder="Paste file path...">
+                            <div class="panel-buttons">
+                                <button class="btn-small" id="load-paths-file">Load File</button>
+                                <button class="btn-small" id="format-paths">Format</button>
+                            </div>
+                        </div>
+                        <textarea id="paths-json" placeholder="Paste JSON here or click 'Load File'..."></textarea>
+                        <div class="error-message" id="paths-error"></div>
+                    </div>
+                </div>
+
+                <div class="results-container">
+                    <div class="results-header">
+                        <span>JSON Paths</span>
+                        <div class="stats" id="paths-stats"></div>
+                    </div>
+                    <div class="results paths-results" id="paths-results">
+                        <p class="placeholder">Click "Extract Paths" to see all JSON paths</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Log Analyzer -->
+            <div id="tab-logs" class="tab-content">
+                <!-- Controls Row: Mode Toggle -->
+                <div class="controls controls-horizontal">
+                    <div class="log-mode-toggle">
+                        <button class="mode-btn active" data-mode="single">Single Analysis</button>
+                        <button class="mode-btn" data-mode="compare">Compare Files</button>
+                    </div>
+                </div>
+
+                <!-- Single Analysis Mode -->
+                <div id="log-single-mode" class="analysis-mode">
+                    <div class="controls controls-horizontal">
+                        <div class="file-input-row">
+                            <button class="btn-small" id="analyze-file-btn">Load File</button>
+                            <input type="text" id="log-file-path" class="file-path-input" placeholder="Paste file path and press Enter...">
+                        </div>
+                    </div>
+
+                    <div class="results-container">
+                        <div class="results-header">
+                            <span>Analysis Results</span>
+                            <div class="stats" id="log-stats"></div>
+                        </div>
+                        <div class="results paths-results" id="log-results">
+                            <p class="placeholder">Click "Load File" to analyze JSON paths in a log file</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Compare Mode -->
+                <div id="log-compare-mode" class="analysis-mode" style="display: none;">
+                    <!-- Compare Options Row -->
+                    <div class="controls controls-horizontal">
+                        <div class="options-panel">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="opt-show-only-changes">
+                                Show only changes
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="opt-show-top-values">
+                                Show top values
+                            </label>
+                        </div>
+                        <div class="view-mode-toggle" id="compare-view-toggle">
+                            <button class="mode-btn active" data-view="structured">Structured</button>
+                            <button class="mode-btn" data-view="sidebyside">Side-by-Side</button>
+                        </div>
+                        <button class="btn-primary" id="compare-analyses-btn" disabled>Compare</button>
+                    </div>
+
+                    <!-- Dual File Inputs -->
+                    <div class="compare-inputs">
+                        <div class="compare-panel">
+                            <div class="panel-header">
+                                <span>Left (Baseline)</span>
+                            </div>
+                            <div class="file-input-row">
+                                <button class="btn-small" id="compare-left-load">Load File</button>
+                                <input type="text" id="compare-left-path" class="file-path-input" placeholder="Paste file path and press Enter...">
+                            </div>
+                            <div class="file-info" id="compare-left-info"></div>
+                        </div>
+
+                        <div class="compare-panel">
+                            <div class="panel-header">
+                                <span>Right (Comparison)</span>
+                            </div>
+                            <div class="file-input-row">
+                                <button class="btn-small" id="compare-right-load">Load File</button>
+                                <input type="text" id="compare-right-path" class="file-path-input" placeholder="Paste file path and press Enter...">
+                            </div>
+                            <div class="file-info" id="compare-right-info"></div>
+                        </div>
+                    </div>
+
+                    <!-- Comparison Results -->
+                    <div class="results-container" id="comparison-results-container" style="display: none;">
+                        <div class="results-header">
+                            <span>Comparison Results</span>
+                            <div class="stats" id="comparison-stats"></div>
+                        </div>
+                        <!-- Structured View (default) -->
+                        <div class="results" id="comparison-structured-view">
+                            <table class="compare-table" id="comparison-table">
+                                <thead>
+                                    <tr>
+                                        <th>Path</th>
+                                        <th>Left Count</th>
+                                        <th>Right Count</th>
+                                        <th>Δ Count</th>
+                                        <th>Left Objects</th>
+                                        <th>Right Objects</th>
+                                        <th>Δ Objects</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="comparison-tbody">
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Side-by-Side View -->
+                        <div class="results comparison-sidebyside-view" id="comparison-sidebyside-view" style="display: none;">
+                            <div class="sidebyside-container">
+                                <div class="sidebyside-panel">
+                                    <div class="sidebyside-header">Left (Baseline)</div>
+                                    <div class="sidebyside-content">
+                                        <table class="path-table" id="sidebyside-left-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Path</th>
+                                                    <th>Count</th>
+                                                    <th>Objects</th>
+                                                    <th>Distinct</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="sidebyside-left-tbody"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="sidebyside-panel">
+                                    <div class="sidebyside-header">Right (Comparison)</div>
+                                    <div class="sidebyside-content">
+                                        <table class="path-table" id="sidebyside-right-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Path</th>
+                                                    <th>Count</th>
+                                                    <th>Objects</th>
+                                                    <th>Distinct</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="sidebyside-right-tbody"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 4: Settings -->
+            <div id="tab-settings" class="tab-content">
+                <div class="settings-container">
+                    <h2 class="settings-title">Settings</h2>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">File Path History</h3>
+                        <div class="settings-option">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="opt-enable-path-history" checked>
+                                Enable file path history
+                            </label>
+                            <p class="settings-description">Remember recently used file paths for quick access</p>
+                        </div>
+                        <div class="settings-option">
+                            <button class="btn-secondary" id="clear-path-history-btn">Clear Path History</button>
+                            <p class="settings-description">Remove all saved file paths from history</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">Feedback</h3>
+                        <div class="settings-option">
+                            <a href="#" class="bug-report-link" id="bug-report-link">
+                                <svg viewBox="0 0 24 24" fill="currentColor" class="bug-report-icon">
+                                    <path d="M20 8h-2.81a5.985 5.985 0 0 0-1.82-1.96L17 4.41 15.59 3l-2.17 2.17C12.96 5.06 12.49 5 12 5c-.49 0-.96.06-1.41.17L8.41 3 7 4.41l1.62 1.63C7.88 6.55 7.26 7.22 6.81 8H4v2h2.09c-.05.33-.09.66-.09 1v1H4v2h2v1c0 .34.04.67.09 1H4v2h2.81c1.04 1.79 2.97 3 5.19 3s4.15-1.21 5.19-3H20v-2h-2.09c.05-.33.09-.66.09-1v-1h2v-2h-2v-1c0-.34-.04-.67-.09-1H20V8zm-6 8h-4v-2h4v2zm0-4h-4v-2h4v2z"/>
+                                </svg>
+                                Report a Bug
+                            </a>
+                            <p class="settings-description">Found an issue? Let me know on GitHub</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">Support</h3>
+                        <div class="settings-option">
+                            <a href="https://buymeacoffee.com/areese801" target="_blank" class="bmc-settings-link" id="bmc-settings-link">
+                                <svg viewBox="0 0 24 24" fill="currentColor" class="bmc-settings-icon">
+                                    <path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z"/>
+                                </svg>
+                                Buy me a coffee
+                            </a>
+                            <p class="settings-description">If you find this tool useful, consider supporting its development</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="./src/main.js" type="module"></script>
+</body>
+</html>
