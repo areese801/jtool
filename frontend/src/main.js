@@ -971,9 +971,16 @@ function displayPaths(paths) {
         const tr = document.createElement('tr');
         const countClass = item.count > 1 ? 'count-cell multiple' : 'count-cell';
         tr.innerHTML = `
-            <td class="path-cell">${escapeHtml(item.path)}</td>
+            <td class="path-cell"><span class="clickable-path" title="Click to copy jq path">${escapeHtml(item.path)}</span></td>
             <td class="${countClass}">${item.count}</td>
         `;
+
+        const pathSpan = tr.querySelector('.clickable-path');
+        pathSpan.addEventListener('click', (e) => {
+            e.stopPropagation();
+            copyJqCommand(item.path, pathsFilePathInput.value.trim());
+        });
+
         tbody.appendChild(tr);
     }
     table.appendChild(tbody);
@@ -1119,15 +1126,15 @@ function displayLogPaths(paths) {
         // Only show key icon if uniqueness is statistically meaningful
         const keyIcon = (isUnique && isStatisticallyMeaningful) ? '<span class="key-icon" title="All values unique">🔑</span>' : '';
         tr.innerHTML = `
-            <td class="path-cell clickable-path" title="Click to copy jq command">${escapeHtml(item.path)}</td>
+            <td class="path-cell"><span class="clickable-path" title="Click to copy jq command">${escapeHtml(item.path)}</span></td>
             <td class="${countClass}">${item.count.toLocaleString()}</td>
             <td class="objects-cell">${item.objectHits.toLocaleString()}</td>
             <td class="${distinctClass}" title="${distinctTitle}">${item.distinctCount.toLocaleString()}${keyIcon}</td>
         `;
 
-        // Add click handler for path cell - copy to clipboard
-        const pathCell = tr.querySelector('.clickable-path');
-        pathCell.addEventListener('click', (e) => {
+        // Add click handler for path text - copy to clipboard
+        const pathSpan = tr.querySelector('.clickable-path');
+        pathSpan.addEventListener('click', (e) => {
             e.stopPropagation();
             copyJqCommand(item.path);
         });
@@ -1136,6 +1143,12 @@ function displayLogPaths(paths) {
         const distinctCell = tr.querySelector('.count-cell.clickable');
         distinctCell.addEventListener('click', (e) => {
             e.stopPropagation();
+            showTopValues(item, tr);
+        });
+
+        // Row click (anywhere not handled by path/distinct cells) expands top values
+        tr.style.cursor = 'pointer';
+        tr.addEventListener('click', () => {
             showTopValues(item, tr);
         });
 
@@ -1194,8 +1207,10 @@ function showTopValues(item, row) {
  * If a file path is available, copies a full bash command.
  * Otherwise, just copies the jq path pattern.
  */
-async function copyJqCommand(path) {
-    const filePath = logFilePathInput.value.trim();
+async function copyJqCommand(path, filePath) {
+    if (filePath === undefined) {
+        filePath = logFilePathInput.value.trim();
+    }
     let textToCopy;
 
     if (filePath) {
