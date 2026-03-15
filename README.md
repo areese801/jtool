@@ -18,11 +18,15 @@ Two view modes:
 - **Structured View** - Hierarchical tree showing exact paths of differences
 - **Side-by-Side View** - Traditional two-column comparison
 
+![Diff - Structured View](docs/screenshots/diff-structured.png)
+
 ### Path Explorer
 Extract and explore all JSON paths from a document:
 - See every unique path in your JSON structure
 - Count occurrences of each path
 - Useful for understanding complex or unfamiliar JSON schemas
+
+![Path Explorer](docs/screenshots/path-explorer.png)
 
 ### Log Analyzer
 Analyze JSON-lines log files (JSONL, Singer taps, etc.):
@@ -37,6 +41,10 @@ Analyze JSON-lines log files (JSONL, Singer taps, etc.):
 - Compare path structures between two log files
 - Identify added/removed/changed paths
 - Useful for comparing API responses, data pipeline outputs, etc.
+
+![Log Analyzer - Single File](docs/screenshots/log-analyzer-single.png)
+
+![Log Analyzer - Compare Files](docs/screenshots/log-analyzer-compare.png)
 
 ## Installation
 

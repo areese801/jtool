@@ -1,0 +1,163 @@
+{
+  "catalog": {
+    "version": "2024.3",
+    "last_synced": "2024-12-14T08:00:00Z",
+    "store": {
+      "name": "TechHaven",
+      "region": "us-west"
+    }
+  },
+  "products": [
+    {
+      "id": "PROD-001",
+      "name": "ProBook Laptop 15\"",
+      "category": "electronics",
+      "brand": "TechCorp",
+      "pricing": {
+        "retail": 1299.99,
+        "wholesale": 899.50,
+        "currency": "USD",
+        "sale": {
+          "active": true,
+          "discount_pct": 10,
+          "ends_at": "2024-12-31"
+        }
+      },
+      "dimensions": {
+        "width_cm": 35.4,
+        "height_cm": 1.8,
+        "depth_cm": 24.7,
+        "weight_kg": 1.85
+      },
+      "variants": [
+        {
+          "sku": "LAPTOP-PRO-15-SLV",
+          "color": "Silver",
+          "storage_gb": 512,
+          "ram_gb": 16,
+          "in_stock": true,
+          "warehouse_qty": 42
+        },
+        {
+          "sku": "LAPTOP-PRO-15-BLK",
+          "color": "Space Black",
+          "storage_gb": 1024,
+          "ram_gb": 32,
+          "in_stock": true,
+          "warehouse_qty": 18
+        },
+        {
+          "sku": "LAPTOP-PRO-15-GLD",
+          "color": "Gold",
+          "storage_gb": 256,
+          "ram_gb": 8,
+          "in_stock": false,
+          "warehouse_qty": 0
+        }
+      ],
+      "images": [
+        {"url": "/images/laptop-pro-front.jpg", "alt": "Front view", "primary": true},
+        {"url": "/images/laptop-pro-side.jpg", "alt": "Side view", "primary": false}
+      ],
+      "reviews": [
+        {"user": "techfan42", "rating": 5, "text": "Best laptop I've owned", "verified": true},
+        {"user": "devjane", "rating": 4, "text": "Great for development, battery could be better", "verified": true},
+        {"user": "student_99", "rating": 3, "text": "Good but pricey for students", "verified": false}
+      ],
+      "tags": ["laptop", "professional", "portable"]
+    },
+    {
+      "id": "PROD-002",
+      "name": "ErgoDesk Standing Desk",
+      "category": "furniture",
+      "brand": "ErgoWorks",
+      "pricing": {
+        "retail": 599.00,
+        "wholesale": 380.00,
+        "currency": "USD",
+        "sale": {
+          "active": false,
+          "discount_pct": 0,
+          "ends_at": null
+        }
+      },
+      "dimensions": {
+        "width_cm": 152.4,
+        "height_cm": 127.0,
+        "depth_cm": 76.2,
+        "weight_kg": 35.0
+      },
+      "variants": [
+        {
+          "sku": "DESK-ERGO-WHT",
+          "color": "White Oak",
+          "size": "60 inch",
+          "in_stock": true,
+          "warehouse_qty": 7
+        },
+        {
+          "sku": "DESK-ERGO-WAL",
+          "color": "Walnut",
+          "size": "72 inch",
+          "in_stock": true,
+          "warehouse_qty": 3
+        }
+      ],
+      "images": [
+        {"url": "/images/desk-ergo-standing.jpg", "alt": "Standing position", "primary": true},
+        {"url": "/images/desk-ergo-sitting.jpg", "alt": "Sitting position", "primary": false},
+        {"url": "/images/desk-ergo-detail.jpg", "alt": "Motor detail", "primary": false}
+      ],
+      "reviews": [
+        {"user": "wfh_warrior", "rating": 5, "text": "Transformed my home office", "verified": true}
+      ],
+      "tags": ["desk", "ergonomic", "standing", "motorized"]
+    },
+    {
+      "id": "PROD-003",
+      "name": "Wireless Noise-Canceling Headphones",
+      "category": "electronics",
+      "brand": "SoundWave",
+      "pricing": {
+        "retail": 249.99,
+        "wholesale": 162.00,
+        "currency": "USD",
+        "sale": {
+          "active": true,
+          "discount_pct": 20,
+          "ends_at": "2025-01-15"
+        }
+      },
+      "dimensions": {
+        "width_cm": 18.0,
+        "height_cm": 20.0,
+        "depth_cm": 8.5,
+        "weight_kg": 0.254
+      },
+      "variants": [
+        {
+          "sku": "HP-NC-BLK",
+          "color": "Midnight Black",
+          "in_stock": true,
+          "warehouse_qty": 156
+        },
+        {
+          "sku": "HP-NC-WHT",
+          "color": "Pearl White",
+          "in_stock": true,
+          "warehouse_qty": 89
+        }
+      ],
+      "images": [
+        {"url": "/images/headphones-nc-main.jpg", "alt": "Product shot", "primary": true}
+      ],
+      "reviews": [
+        {"user": "audiophile_mike", "rating": 5, "text": "ANC is phenomenal", "verified": true},
+        {"user": "commuter_lisa", "rating": 5, "text": "Perfect for the train", "verified": true},
+        {"user": "music_lover", "rating": 4, "text": "Comfortable for long sessions", "verified": true},
+        {"user": "budget_buyer", "rating": 4, "text": "Worth the price on sale", "verified": false}
+      ],
+      "tags": ["headphones", "wireless", "noise-canceling", "bluetooth"]
+    }
+  ]
+}

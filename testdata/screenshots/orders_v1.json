@@ -1,0 +1,51 @@
+{
+  "order_id": "ORD-2024-78432",
+  "status": "pending",
+  "customer": {
+    "id": "CUST-1192",
+    "name": "Sarah Chen",
+    "email": "sarah.chen@example.com",
+    "loyalty_tier": "gold"
+  },
+  "items": [
+    {
+      "sku": "LAPTOP-PRO-15",
+      "name": "ProBook Laptop 15\"",
+      "quantity": 1,
+      "unit_price": 1299.00,
+      "discount": 0.10
+    },
+    {
+      "sku": "USB-C-HUB-7P",
+      "name": "7-Port USB-C Hub",
+      "quantity": 2,
+      "unit_price": 49.00,
+      "discount": 0
+    },
+    {
+      "sku": "SLEEVE-15-BLK",
+      "name": "Laptop Sleeve 15\" - Black",
+      "quantity": 1,
+      "unit_price": 34.99,
+      "discount": 0
+    }
+  ],
+  "shipping": {
+    "method": "standard",
+    "address": {
+      "street": "742 Evergreen Terrace",
+      "city": "Portland",
+      "state": "OR",
+      "zip": "97201",
+      "country": "US"
+    },
+    "estimated_delivery": "2024-12-20"
+  },
+  "promo_code": "HOLIDAY2024",
+  "subtotal": 1432.99,
+  "tax": 114.64,
+  "total": 1547.63,
+  "notes": null,
+  "created_at": "2024-12-10T14:32:00Z",
+  "updated_at": "2024-12-10T14:32:00Z"
+}
