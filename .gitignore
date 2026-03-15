@@ -4,3 +4,5 @@ frontend/dist
 .idea/
 *.log
 *_out.txt
+.DS_Store
+*.zip
