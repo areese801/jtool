@@ -1070,6 +1070,10 @@ datalist {
     filter: brightness(0.95);
 }
 
+.comparison-sidebyside-view .row-placeholder {
+    opacity: 0.3;
+}
+
 .comparison-sidebyside-view .path-cell {
     font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
     word-break: break-all;

@@ -35,6 +35,8 @@ export function GetJSONPathsWithContainers(arg1:string,arg2:boolean):Promise<pat
 
 export function GetMostRecentFilePath(arg1:string):Promise<string>;
 
+export function GetVersion():Promise<string>;
+
 export function OpenJSONFile():Promise<string>;
 
 export function OpenJSONFileWithPath():Promise<main.FileResult>;

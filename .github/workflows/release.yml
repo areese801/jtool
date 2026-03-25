@@ -61,7 +61,7 @@ jobs:
         run: npm install
 
       - name: Build Wails app
-        run: wails build -platform ${{ matrix.platform }}
+        run: wails build -platform ${{ matrix.platform }} -ldflags "-X main.version=${{ github.ref_name }}"
 
       # macOS: ad-hoc sign the app bundle
       - name: Sign macOS app (ad-hoc)

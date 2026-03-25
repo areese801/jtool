@@ -19,7 +19,8 @@ import {
     CompareLogFiles,
     GetAllFileHistory,
     SaveFilePathToHistory,
-    ClearFileHistory
+    ClearFileHistory,
+    GetVersion
 } from '../wailsjs/go/main/App';
 
 // ============================================================
@@ -1275,6 +1276,23 @@ const comparisonSideBySideView = document.getElementById('comparison-sidebyside-
 const sidebysideLeftTbody = document.getElementById('sidebyside-left-tbody');
 const sidebysideRightTbody = document.getElementById('sidebyside-right-tbody');
 
+// Synchronized scrolling for side-by-side panels
+const sidebysideLeftScroll = document.getElementById('sidebyside-left-table').closest('.sidebyside-content');
+const sidebysideRightScroll = document.getElementById('sidebyside-right-table').closest('.sidebyside-content');
+let _syncingScroll = false;
+sidebysideLeftScroll.addEventListener('scroll', () => {
+    if (_syncingScroll) return;
+    _syncingScroll = true;
+    sidebysideRightScroll.scrollTop = sidebysideLeftScroll.scrollTop;
+    _syncingScroll = false;
+});
+sidebysideRightScroll.addEventListener('scroll', () => {
+    if (_syncingScroll) return;
+    _syncingScroll = true;
+    sidebysideLeftScroll.scrollTop = sidebysideRightScroll.scrollTop;
+    _syncingScroll = false;
+});
+
 // Store analysis results for comparison
 let leftAnalysisResult = null;
 let rightAnalysisResult = null;
@@ -1681,106 +1699,102 @@ function renderSideBySideComparison(comparisons, showTopValues) {
     sidebysideLeftTbody.innerHTML = '';
     sidebysideRightTbody.innerHTML = '';
 
-    // Build left table (paths from left analysis only)
-    const leftPaths = comparisons.filter(c => c.left);
-    for (const comp of leftPaths) {
-        const tr = document.createElement('tr');
+    // Filter to only comparisons that have at least one side
+    const visibleComparisons = comparisons.filter(c => c.left || c.right);
 
-        // Add row class based on status
-        if (comp.status === 'removed') {
-            tr.classList.add('row-removed');
-        } else if (comp.status === 'changed') {
-            tr.classList.add('row-changed');
+    // Build both tables in lockstep so rows align like a diff tool.
+    // When a path exists on only one side, insert a blank placeholder on the other.
+    for (const comp of visibleComparisons) {
+        // --- Left row ---
+        const leftTr = document.createElement('tr');
+        if (comp.left) {
+            if (comp.status === 'removed') {
+                leftTr.classList.add('row-removed');
+            } else if (comp.status === 'changed') {
+                leftTr.classList.add('row-changed');
+            }
+
+            const pathCell = document.createElement('td');
+            pathCell.className = 'path-cell clickable-path';
+            pathCell.textContent = comp.path;
+            pathCell.title = 'Click to copy jq command';
+            pathCell.addEventListener('click', (e) => {
+                e.stopPropagation();
+                copyJqCommandForComparison(comp.path, 'left');
+            });
+            leftTr.appendChild(pathCell);
+
+            const countCell = document.createElement('td');
+            countCell.className = 'count-cell';
+            countCell.textContent = comp.left.count.toLocaleString();
+            leftTr.appendChild(countCell);
+
+            const objectsCell = document.createElement('td');
+            objectsCell.className = 'count-cell';
+            objectsCell.textContent = comp.left.objectHits.toLocaleString();
+            leftTr.appendChild(objectsCell);
+
+            const distinctCell = document.createElement('td');
+            distinctCell.className = 'count-cell';
+            distinctCell.textContent = comp.left.distinctCount.toLocaleString();
+            leftTr.appendChild(distinctCell);
+        } else {
+            // Placeholder row to keep alignment with the right side
+            leftTr.classList.add('row-placeholder');
+            leftTr.innerHTML = '<td colspan="4">&nbsp;</td>';
         }
+        sidebysideLeftTbody.appendChild(leftTr);
 
-        // Path
-        const pathCell = document.createElement('td');
-        pathCell.className = 'path-cell clickable-path';
-        pathCell.textContent = comp.path;
-        pathCell.title = 'Click to copy jq command';
-        pathCell.addEventListener('click', (e) => {
-            e.stopPropagation();
-            copyJqCommandForComparison(comp.path, 'left');
-        });
-        tr.appendChild(pathCell);
+        // --- Right row ---
+        const rightTr = document.createElement('tr');
+        if (comp.right) {
+            if (comp.status === 'added') {
+                rightTr.classList.add('row-added');
+            } else if (comp.status === 'changed') {
+                rightTr.classList.add('row-changed');
+            }
 
-        // Count
-        const countCell = document.createElement('td');
-        countCell.className = 'count-cell';
-        countCell.textContent = comp.left.count.toLocaleString();
-        tr.appendChild(countCell);
+            const pathCell = document.createElement('td');
+            pathCell.className = 'path-cell clickable-path';
+            pathCell.textContent = comp.path;
+            pathCell.title = 'Click to copy jq command';
+            pathCell.addEventListener('click', (e) => {
+                e.stopPropagation();
+                copyJqCommandForComparison(comp.path, 'right');
+            });
+            rightTr.appendChild(pathCell);
 
-        // Objects
-        const objectsCell = document.createElement('td');
-        objectsCell.className = 'count-cell';
-        objectsCell.textContent = comp.left.objectHits.toLocaleString();
-        tr.appendChild(objectsCell);
+            const countCell = document.createElement('td');
+            countCell.className = 'count-cell';
+            countCell.textContent = comp.right.count.toLocaleString();
+            rightTr.appendChild(countCell);
 
-        // Distinct
-        const distinctCell = document.createElement('td');
-        distinctCell.className = 'count-cell';
-        distinctCell.textContent = comp.left.distinctCount.toLocaleString();
-        tr.appendChild(distinctCell);
+            const objectsCell = document.createElement('td');
+            objectsCell.className = 'count-cell';
+            objectsCell.textContent = comp.right.objectHits.toLocaleString();
+            rightTr.appendChild(objectsCell);
 
-        sidebysideLeftTbody.appendChild(tr);
-    }
-
-    // Build right table (paths from right analysis only)
-    const rightPaths = comparisons.filter(c => c.right);
-    for (const comp of rightPaths) {
-        const tr = document.createElement('tr');
-
-        // Add row class based on status
-        if (comp.status === 'added') {
-            tr.classList.add('row-added');
-        } else if (comp.status === 'changed') {
-            tr.classList.add('row-changed');
+            const distinctCell = document.createElement('td');
+            distinctCell.className = 'count-cell';
+            distinctCell.textContent = comp.right.distinctCount.toLocaleString();
+            rightTr.appendChild(distinctCell);
+        } else {
+            // Placeholder row to keep alignment with the left side
+            rightTr.classList.add('row-placeholder');
+            rightTr.innerHTML = '<td colspan="4">&nbsp;</td>';
         }
-
-        // Path
-        const pathCell = document.createElement('td');
-        pathCell.className = 'path-cell clickable-path';
-        pathCell.textContent = comp.path;
-        pathCell.title = 'Click to copy jq command';
-        pathCell.addEventListener('click', (e) => {
-            e.stopPropagation();
-            copyJqCommandForComparison(comp.path, 'right');
-        });
-        tr.appendChild(pathCell);
-
-        // Count
-        const countCell = document.createElement('td');
-        countCell.className = 'count-cell';
-        countCell.textContent = comp.right.count.toLocaleString();
-        tr.appendChild(countCell);
-
-        // Objects
-        const objectsCell = document.createElement('td');
-        objectsCell.className = 'count-cell';
-        objectsCell.textContent = comp.right.objectHits.toLocaleString();
-        tr.appendChild(objectsCell);
-
-        // Distinct
-        const distinctCell = document.createElement('td');
-        distinctCell.className = 'count-cell';
-        distinctCell.textContent = comp.right.distinctCount.toLocaleString();
-        tr.appendChild(distinctCell);
-
-        sidebysideRightTbody.appendChild(tr);
+        sidebysideRightTbody.appendChild(rightTr);
     }
 
-    // Show message if no results in left
-    if (leftPaths.length === 0) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 24px;">No paths in left file</td>`;
-        sidebysideLeftTbody.appendChild(tr);
-    }
+    // Show message if no results
+    if (visibleComparisons.length === 0) {
+        const leftTr = document.createElement('tr');
+        leftTr.innerHTML = `<td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 24px;">No paths in left file</td>`;
+        sidebysideLeftTbody.appendChild(leftTr);
 
-    // Show message if no results in right
-    if (rightPaths.length === 0) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 24px;">No paths in right file</td>`;
-        sidebysideRightTbody.appendChild(tr);
+        const rightTr = document.createElement('tr');
+        rightTr.innerHTML = `<td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 24px;">No paths in right file</td>`;
+        sidebysideRightTbody.appendChild(rightTr);
     }
 }
 
@@ -1910,6 +1924,11 @@ document.getElementById('bug-report-link')?.addEventListener('click', (e) => {
 // Load file path history when the app starts
 // This file is loaded as a module, so DOM is already ready
 loadFilePathHistory();
+
+// Display app version in Settings tab
+GetVersion().then(v => {
+    document.getElementById('app-version').textContent = v;
+}).catch(() => {});
 
 // Listen for tab switch events from the Go backend (e.g., from menu bar)
 EventsOn('switchTab', (tabId) => {

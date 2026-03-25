@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"fmt"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/menu"
@@ -11,12 +12,19 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+// version is set at build time via -ldflags:
+//
+//	go build -ldflags "-X main.version=v1.0.1"
+//
+// Falls back to "dev" for local development builds.
+var version = "dev"
+
 //go:embed all:frontend/dist
 var assets embed.FS
 
 func main() {
 	// Create an instance of the app structure
-	app := NewApp()
+	app := NewApp(version)
 
 	// Create the application menu
 	appMenu := createAppMenu(app)
@@ -41,7 +49,7 @@ func main() {
 		Mac: &mac.Options{
 			About: &mac.AboutInfo{
 				Title:   "jtool",
-				Message: "A JSON diff and analysis tool",
+				Message: fmt.Sprintf("A JSON diff and analysis tool\nVersion: %s", version),
 			},
 		},
 	})
