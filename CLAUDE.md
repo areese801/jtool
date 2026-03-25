@@ -89,23 +89,36 @@ The project uses GitHub Actions to build and release cross-platform binaries. Th
 - Windows amd64
 - Linux amd64
 
-**To create a release:**
+**Version embedding:** The app version is injected at build time via `-ldflags "-X main.version=<tag>"`. Local dev builds show "dev". The version is displayed in the macOS About dialog and the Settings tab.
+
+**Branch protection:** `main` has branch protection enabled - all changes must go through PRs (no direct pushes).
+
+**To create a release after merging a PR:**
 ```bash
-# After merging to main, tag the release
-git tag -a v1.0.0 -m "Release description"
-git push origin v1.0.0
+git checkout main
+git pull
+git tag -a v1.0.1 -m "Brief description of changes"
+git push origin v1.0.1
 ```
 
 This triggers the workflow which:
-1. Builds the Wails app on all 4 platforms
+1. Builds the Wails app on all 4 platforms with the version baked in
 2. Packages each build (`.zip` for macOS/Windows, `.tar.gz` for Linux)
 3. Creates a GitHub Release with auto-generated notes and attached binaries
 
 **Version format:** Use semantic versioning (`vMAJOR.MINOR.PATCH`)
+- Bug fix → patch bump (v1.0.0 → v1.0.1)
+- New feature → minor bump (v1.0.1 → v1.1.0)
+- Breaking change → major bump (v1.1.0 → v2.0.0)
 
 ### Assistant Reminder
 
-**After merging a branch to main:** Ask the user if they want to create a version tag and release. Remind them of the tagging commands above.
+**After merging a branch to main:** Always remind the user to tag and release. Walk them through:
+1. `git checkout main && git pull`
+2. `git tag -a vX.Y.Z -m "description"`
+3. `git push origin vX.Y.Z`
+4. Check the Actions tab for build progress
+5. Download the new binary from the GitHub Release page to update local install
 
 ## Phased Development Approach
 
