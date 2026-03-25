@@ -62,6 +62,10 @@ export function GetMostRecentFilePath(arg1) {
   return window['go']['main']['App']['GetMostRecentFilePath'](arg1);
 }
 
+export function GetVersion() {
+  return window['go']['main']['App']['GetVersion']();
+}
+
 export function OpenJSONFile() {
   return window['go']['main']['App']['OpenJSONFile']();
 }

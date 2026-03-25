@@ -19,7 +19,8 @@ import {
     CompareLogFiles,
     GetAllFileHistory,
     SaveFilePathToHistory,
-    ClearFileHistory
+    ClearFileHistory,
+    GetVersion
 } from '../wailsjs/go/main/App';
 
 // ============================================================
@@ -1923,6 +1924,11 @@ document.getElementById('bug-report-link')?.addEventListener('click', (e) => {
 // Load file path history when the app starts
 // This file is loaded as a module, so DOM is already ready
 loadFilePathHistory();
+
+// Display app version in Settings tab
+GetVersion().then(v => {
+    document.getElementById('app-version').textContent = v;
+}).catch(() => {});
 
 // Listen for tab switch events from the Go backend (e.g., from menu bar)
 EventsOn('switchTab', (tabId) => {
