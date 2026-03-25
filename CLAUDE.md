@@ -207,3 +207,4 @@ This pattern ensures visual consistency across all tabs (Diff, Path Explorer, Lo
 - Explain Go patterns as they're introduced
 - Use this project as a teaching opportunity for Go best practices
 - **Follow the UI/UX Design Patterns above for consistent interface design**
+- **TODO.md** is a git-ignored local file for tracking work items across sessions. Check it at the start of a session for context on outstanding work.
