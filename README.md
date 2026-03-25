@@ -175,6 +175,47 @@ jtool/
 └── build/                 # Build assets and output
 ```
 
+## Releasing
+
+Releases are automated via GitHub Actions. Pushing a version tag triggers a build across all platforms and creates a GitHub Release with downloadable binaries.
+
+### Steps
+
+```bash
+# 1. Merge your PR to main, then:
+git checkout main
+git pull
+
+# 2. Create an annotated tag with the new version
+git tag -a v1.1.0 -m "Brief description of changes"
+
+# 3. Push the tag to trigger the release build
+git push origin v1.1.0
+```
+
+### Version format
+
+Uses [semantic versioning](https://semver.org/) (`vMAJOR.MINOR.PATCH`):
+
+| Change type | Example | When |
+|-------------|---------|------|
+| Patch | v1.0.0 → v1.0.1 | Bug fixes |
+| Minor | v1.0.1 → v1.1.0 | New features |
+| Major | v1.1.0 → v2.0.0 | Breaking changes |
+
+The version tag is embedded in the binary at build time and displayed in **Settings** and the macOS **About** dialog. Local dev builds (`wails dev`) show "dev".
+
+### Updating your local install (macOS)
+
+After the release workflow completes (~5 min), download and install the new build:
+
+```bash
+# Download from the GitHub Release page, then:
+unzip jtool-macos-arm64.zip
+mv jtool.app /Applications/
+xattr -cr /Applications/jtool.app
+```
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit issues and pull requests.
